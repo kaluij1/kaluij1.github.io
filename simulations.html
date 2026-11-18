@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>John Kaluiji, Simulations</title>
+<meta name="description" content="Interactive engineering simulations by John Kaluiji, each checked against published results, with the math written out.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<link rel="stylesheet" href="style.css">
+
+<!-- EDIT ME: your intro, projects and contact details all live in this file. Search for "EDIT". -->
+</head>
+<body>
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="resume.html">Résumé</a>
+      <a href="simulations.html" aria-current="page">Simulations</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="page-head">
+    <div class="inner">
+      <p class="eyebrow">Simulations</p>
+      <h1>Simulations you can run</h1>
+      <p class="lede">Each one runs in your browser, is checked against a published result, and has a page that walks through its math from the problem to the answer.</p>
+    </div>
+  </section>
+
+<section class="block first" id="simulations" aria-labelledby="sims-title">
+    <div class="inner">
+            
+      <ul class="work">
+        <li>
+          <span class="field-name">Energy</span>
+          <div>
+            <h3><a href="solar-tracking.html">Is solar tracking worth it?</a></h3>
+            <p>A year of real sunlight modeled with pvlib and checked against seven years of output from a real array. Trackers don&#x27;t pay on homes. On solar farms they earn 34% more from 19% more energy.</p>
+          </div>
+          <div class="meta"><a href="solar-tracking.html">Case study</a><a href="solar-sim.html">Live simulation</a><a href="math-solar.html">The math</a><a href="https://github.com/kaluij1/solar-tracker-sim" target="_blank" rel="noopener">Code on GitHub</a></div>
+        </li>
+        <li>
+          <span class="field-name">Fluids</span>
+          <div>
+            <h3><a href="airflow.html">How air moves around a cylinder</a></h3>
+            <p>A live Navier-Stokes solver showing vortices shedding behind a cylinder, with the shedding frequency within 5% of wind-tunnel data. Switch friction off to compare with ideal flow.</p>
+          </div>
+          <div class="meta"><a href="airflow.html">Live simulation</a><a href="math-airflow.html">The math</a></div>
+        </li>
+        <li>
+          <span class="field-name">Heat transfer</span>
+          <div>
+            <h3><a href="convection.html">Cooling a hot plate with moving air</a></h3>
+            <p>A Navier-Stokes and energy equation solver: air flowing over a heated aluminum plate. Its heat transfer coefficient lands within 3% of laminar boundary layer theory.</p>
+          </div>
+          <div class="meta"><a href="convection.html">Live simulation</a><a href="math-convection.html">The math</a></div>
+        </li>
+        <li>
+          <span class="field-name">Structures</span>
+          <div>
+            <h3><a href="beam.html">Bending a cantilever beam</a></h3>
+            <p>A finite element solver for a loaded cantilever beam. It assembles the stiffness matrix, solves K u = F, and matches the closed-form deflection to round-off.</p>
+          </div>
+          <div class="meta"><a href="beam.html">Live simulation</a><a href="math-beam.html">The math</a></div>
+        </li>
+        <li>
+          <span class="field-name">Electronics</span>
+          <div>
+            <h3><a href="servo-arm.html">A robot arm run by 555 timers</a></h3>
+            <p>Four 555 timers generate the servo pulses for a four-joint arm, with full schematics and a PCB layout. The timing model matches SPICE within 0.23%.</p>
+          </div>
+          <div class="meta"><a href="servo-arm.html">Live simulation</a><a href="math-servo-arm.html">The math</a></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+</body></html>

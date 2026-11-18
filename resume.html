@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>John Kaluiji, Résumé</title>
+<meta name="description" content="Résumé of John Kaluiji: experience, education, projects and skills in physics, engineering and simulation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<link rel="stylesheet" href="style.css">
+
+<!-- EDIT ME: your intro, projects and contact details all live in this file. Search for "EDIT". -->
+</head>
+<body>
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="resume.html" aria-current="page">Résumé</a>
+      <a href="simulations.html">Simulations</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="page-head">
+    <div class="inner">
+      <p class="eyebrow">Résumé</p>
+      <h1>Experience, education and projects</h1>
+      <p class="lede">Physics graduate from St. Olaf College with a concentration in engineering studies, based in Minneapolis.</p>
+      <div class="hero-actions"><a class="btn-solid" href="resume-general-John.pdf" download>Download PDF</a><a class="btn-line" href="resume-print.html">One-page version</a></div>
+    </div>
+  </section>
+<section class="block" id="experience" aria-labelledby="exp-title">
+    <div class="inner">
+      <h2 id="exp-title">Experience</h2>
+      <ul class="cv">
+        <li>
+          <span class="when">Jun – Aug 2025</span>
+          <div>
+            <h3>Quality Assurance Intern</h3>
+            <p class="org">Prism Immersive <span class="loc">· Minneapolis, MN</span></p>
+            
+            <ul class="bul"><li>Reviewed weekly mixed reality simulation builds for bugs, usability, scientific accuracy, and safety requirements, with early builds averaging around 50 bug reports each.</li><li>Documented recurring gaps and defects so developers could check for them before release, lowering defect reports in later builds and contributing to a 30% reduction in critical failures.</li><li>Built KPI dashboards in Google Sheets to track open issues and release readiness for project leadership.</li></ul>
+          </div>
+          <div class="meta"></div>
+        </li>
+        <li>
+          <span class="when">Feb – May 2026</span>
+          <div>
+            <h3>Programming Lab Development Assistant</h3>
+            <p class="org">St. Olaf College, Physics Department <span class="loc">· Northfield, MN</span></p>
+            
+            <ul class="bul"><li>Built 2D and 3D physics simulations in Python and C++ using numerical integration to model particle motion, gravitational systems, and nonlinear oscillators, with code and documentation kept in Git.</li></ul>
+          </div>
+          <div class="meta"></div>
+        </li>
+        <li>
+          <span class="when">Feb – May 2026</span>
+          <div>
+            <h3>Thermodynamics Grader</h3>
+            <p class="org">St. Olaf College, Physics Department <span class="loc">· Northfield, MN</span></p>
+            
+            <ul class="bul"><li>Graded weekly problem sets and gave written feedback to students.</li></ul>
+          </div>
+          <div class="meta"></div>
+        </li>
+        <li>
+          <span class="when">Sep 2024 – May 2025</span>
+          <div>
+            <h3>Chassis Design Engineer</h3>
+            <p class="org">Formula SAE Engineering Team, Queen Mary University of London <span class="loc">· London, UK</span></p>
+            
+            <ul class="bul"><li>Developed 3D models of a steel spaceframe chassis in SolidWorks and checked its structural behavior under load with ANSYS FEA.</li><li>Coordinated design changes with the suspension, aerodynamics, and powertrain subteams, weighing cost against performance to meet a fixed competition deadline.</li></ul>
+          </div>
+          <div class="meta"></div>
+        </li>
+        <li>
+          <span class="when">May – Aug 2024</span>
+          <div>
+            <h3>Stockroom Lab Assistant</h3>
+            <p class="org">St. Olaf College, Physics Department <span class="loc">· Northfield, MN</span></p>
+            
+            <ul class="bul"><li>Managed stockroom inventory and maintained access to materials and equipment for engineering and physics laboratory activities.</li><li>Designed parts in SolidWorks and Fusion 360 and fabricated them with 3D printers, laser cutters, and woodworking tools.</li></ul>
+          </div>
+          <div class="meta"></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+<section class="block" id="education" aria-labelledby="edu-title">
+    <div class="inner">
+      <h2 id="edu-title">Education</h2>
+      <ul class="cv">
+        <li>
+          <span class="when">Sep 2022 – May 2026</span>
+          <div>
+            <h3>B.A. Physics, Concentration in Engineering Studies</h3>
+            <p class="org">St. Olaf College <span class="loc">· Northfield, MN</span></p>
+            <p class="course">Relevant coursework: Machine Learning, Probability, Numerical Methods, Simulation Tools in Engineering Analysis, Electronics, Instrumentation and Measurements, Renewable Energy</p>
+          </div>
+          <div class="meta"></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+<section class="block" id="projects" aria-labelledby="projects-title">
+    <div class="inner">
+      <h2 id="projects-title">Projects</h2>
+      <ul class="cv">
+        <li>
+          <span class="when">2026</span>
+          <div>
+            <h3>Manufacturing Surface Defect Detection System</h3>
+            <p class="org">KolektorSDD2</p>
+            <p class="tools">Python, PyTorch, scikit-learn, FastAPI, Docker, GitHub Actions</p>
+            <ul class="bul"><li>Built a transfer learning image classifier (MobileNetV3) that flags defective parts at about 11% defect prevalence, locking the decision threshold on validation data before a single final test.</li><li>Reached 93.6% recall, PR-AUC of 0.90, and ROC-AUC of 0.96 on held-out data; deployed the model as a FastAPI service in Docker with CI tests in GitHub Actions.</li></ul>
+          </div>
+          <div class="meta"><a href="https://github.com/kaluij1/ksdd2-defect-inspector" target="_blank" rel="noopener">Code on GitHub</a></div>
+        </li>
+        <li>
+          <span class="when">2026</span>
+          <div>
+            <h3>Jet Classification in Higgs Boson Decays</h3>
+            
+            <p class="tools">Python, scikit-learn, pandas, pytest</p>
+            <ul class="bul"><li>Found and fixed data leakage in an evaluation pipeline, then compared five models against a physics baseline on 225,868 samples, raising test AUC from 0.757 to 0.906 and background rejection from 7.88 to 23.5.</li></ul>
+          </div>
+          <div class="meta"><a href="https://github.com/kaluij1/Jet-Classification-in-Higgs-Boson-Decays-at-the-LHC" target="_blank" rel="noopener">Code on GitHub</a></div>
+        </li>
+        <li>
+          <span class="when">Sep 2023 – Feb 2024</span>
+          <div>
+            <h3>Single-Axis Solar Tracker</h3>
+            <p class="org">Minnesota Space Grant Consortium</p>
+            <p class="tools">Arduino, stepper and servo motors, photoresistors, SolidWorks</p>
+            <ul class="bul"><li>Prototyped a dual-axis design with servos, then built the final single-axis tracker with a stepper motor on a five-person team.</li><li>Built and validated the tracking mechanism, then traced servo oscillation in the prototypes' outdoor tests to field noise by logging sensor data and fixed it with a moving average filter and deadband, confirmed by before-and-after field tests.</li></ul>
+          </div>
+          <div class="meta"><a href="solar-tracking.html">Case study</a><a href="solar-sim.html">Live simulation</a></div>
+        </li>
+        <li>
+          <span class="when">Nov 2024</span>
+          <div>
+            <h3>CFD Analysis of a Compressor Stator Blade</h3>
+            <p class="org">Queen Mary University of London</p>
+            <p class="tools">Simcenter STAR-CCM+</p>
+            <ul class="bul"><li>Simulated inviscid, incompressible flow over a 2D stator blade and refined the mesh to cut computational runtime by 20%.</li></ul>
+          </div>
+          <div class="meta"></div>
+        </li>
+        <li>
+          <span class="when">Apr 2024</span>
+          <div>
+            <h3>Texas Energy Transition Study</h3>
+            <p class="org">Coauthored coursework study</p>
+            
+            <ul class="bul"><li>Modeled projected energy demand against generation capacity, comparing sources by cost per kWh and storage limits.</li></ul>
+          </div>
+          <div class="meta"></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+<section class="block" id="skills" aria-labelledby="skills-title">
+    <div class="inner two-col">
+      <h2 id="skills-title">Skills</h2>
+      <dl class="skills"><div><dt>Programming</dt><dd>Python, C++, SQL, MATLAB</dd></div><div><dt>Tools and analysis</dt><dd>Git, statistical analysis</dd></div><div><dt>Engineering</dt><dd>SolidWorks, ANSYS FEA, Arduino, 3D printing, laser cutting</dd></div><div><dt>Languages</dt><dd>English, Portuguese (fluent), French (intermediate)</dd></div></dl>
+    </div>
+  </section>
+<section class="block" id="contact" aria-labelledby="contact-title">
+    <div class="inner two-col">
+      <h2 id="contact-title">Contact</h2>
+      <div>
+        <p>Email is the best way to reach me. I'm based in Minneapolis.</p>
+        <ul class="contact-list">
+          <li><span class="k">Email</span><a href="mailto:jkkaluiji@gmail.com">jkkaluiji@gmail.com</a></li>
+          <li><span class="k">Phone</span><span>507-412-7911</span></li>
+          <li><span class="k">LinkedIn</span><a href="https://www.linkedin.com/in/john-kaluiji-a8b533264/" target="_blank" rel="noopener">linkedin.com/in/john-kaluiji</a></li>
+          <li><span class="k">GitHub</span><a href="https://github.com/kaluij1" target="_blank" rel="noopener">github.com/kaluij1</a></li>
+          <li><span class="k">Résumé</span><a href="resume-general-John.pdf" download>PDF, one page</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+</body></html>

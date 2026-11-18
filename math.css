@@ -1,0 +1,41 @@
+/* The math pages: a notebook. Step labels in the margin, working in pen. Blue ink = formula, graphite = numbers, green = checks. */
+:root { --pen: #27406B; --graphite: #3A3F45; --check: #2F6B4F; --font-hand: "Playpen Sans", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive; }
+.math-head { padding-block: clamp(36px, 6vw, 64px) clamp(16px, 3vw, 28px); }
+.math-head h1 { margin: 0 0 14px; font-family: var(--font-display); font-weight: 400; font-size: clamp(2.2rem, 5.2vw, 3.4rem); line-height: 1.06; letter-spacing: -.02em; max-width: 17em; }
+.math-head .lede { margin: 0 0 16px; max-width: 40rem; font-size: clamp(1.02rem, 1.8vw, 1.15rem); line-height: 1.5; }
+.legend-ink { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0 0 20px; font-family: var(--font-hand); font-size: .95rem; }
+.legend-ink span::before { content: ""; display: inline-block; width: 18px; height: 2px; vertical-align: middle; margin-right: 7px; background: currentColor; }
+.ink-f { color: var(--pen); } .ink-n { color: var(--graphite); } .ink-c { color: var(--check); }
+.notebook { padding-bottom: 24px; }
+.part { padding-block: 26px 6px; border-top: 1px solid var(--rule); }
+.part h2 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 400; font-size: clamp(1.4rem, 2.6vw, 1.8rem); line-height: 1.2; }
+.step { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 6px 32px; padding-block: 14px; }
+.step + .step { border-top: 1px dashed var(--rule); }
+.step h3 { margin: .3rem 0 0; font-size: .95rem; font-weight: 600; line-height: 1.35; display: flex; gap: 10px; align-items: baseline; }
+.step h3 .n { flex: none; min-width: 1.4em; font-family: var(--font-hand); font-weight: 400; color: var(--muted); }
+.math { min-width: 0; overflow-x: auto; padding-bottom: 2px; }
+.eq { margin: 0 0 10px; font-family: var(--font-hand); font-weight: 400; font-size: 1.18rem; line-height: 1.55; color: var(--pen); white-space: nowrap; }
+.eq.num { color: var(--graphite); font-size: 1.08rem; }
+.eq.note { color: var(--check); font-size: .98rem; }
+.eq:last-child { margin-bottom: 0; }
+.eq sub, .eq sup, .given sub, .given sup { font-size: .68em; line-height: 0; }
+.fr { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 .16em; line-height: 1.22; }
+.fr > span:first-child { border-bottom: 1.5px solid currentColor; padding: 0 .3em .06em; }
+.fr > span:last-child { padding: .06em .3em 0; }
+.rad { display: inline-block; border-top: 1.5px solid currentColor; padding: 0 .12em 0 .08em; vertical-align: middle; }
+.tablewrap { overflow-x: auto; }
+.given { border-collapse: collapse; margin: 2px 0 8px; font-family: var(--font-hand); font-size: 1.02rem; color: var(--graphite); }
+.given td { padding: 5px 22px 5px 0; border-bottom: 1px dashed var(--rule); white-space: nowrap; vertical-align: baseline; }
+.given td.sym { color: var(--pen); }
+.given td:last-child { font-family: var(--font-body); font-size: .9rem; color: var(--muted); white-space: normal; }
+.given td.val + td:last-child { font-family: var(--font-body); }
+.boxed { display: inline-block; max-width: 100%; padding: 14px 20px; border: 2px solid var(--pen); border-radius: 14px 10px 16px 9px / 10px 15px 9px 14px; background: rgba(255,255,255,.55); }
+.boxed .eq { margin-bottom: 6px; }
+.mtx { display: inline-table; vertical-align: middle; margin: 0 .3em; border-collapse: separate; border-spacing: 0; border-left: 1.5px solid currentColor; border-right: 1.5px solid currentColor; border-radius: 7px; }
+.mtx td { padding: 1px .55em; text-align: center; font-size: .92em; }
+div.eq { margin-bottom: 10px; }
+.endlinks { padding-block: 10px 48px; }
+@media (max-width: 760px) {
+  .step { grid-template-columns: 1fr; gap: 4px; }
+  .eq { font-size: 1.04rem; } .eq.num { font-size: .98rem; }
+}

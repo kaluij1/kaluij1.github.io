@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Math: Air Flow</title>
+<meta name="description" content="The air flow explorer, told from the problem to the answer in formulas and numbers. First the ideal flow with no friction, then the real thing: the Navier-Stokes equations, vortex shedding, drag and the Strouhal number.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Playpen+Sans:wght@300;400&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="math.css">
+</head>
+<body>
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="simulations.html">Simulations</a>
+      <a href="airflow.html">Simulation</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="math-head">
+    <div class="inner">
+      <p class="eyebrow">The math · Air flow</p>
+      <h1>Air around a cylinder, in equations</h1>
+      <p class="lede">The air flow explorer, told from the problem to the answer in formulas and numbers. First the ideal flow with no friction, then the real thing: the Navier-Stokes equations, vortex shedding, drag and the Strouhal number.</p>
+      <p class="legend-ink"><span class="ink-f">formula</span><span class="ink-n">with the numbers in</span><span class="ink-c">checks and side notes</span></p>
+      <a class="text-link" href="airflow.html"><span aria-hidden="true">←</span> Back to the simulation</a>
+    </div>
+  </section>
+  <div class="inner notebook">
+<section class="part"><h2>The problem</h2><div class="step"><h3><span class="n">0</span>Given</h3><div class="math"><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">U</td><td class="val">10 m/s</td><td>wind, left to right</td></tr><tr><td class="sym">a</td><td class="val">0.15 m</td><td>cylinder radius</td></tr><tr><td class="sym">T</td><td class="val">15 °C = 288.15 K</td><td>air temperature</td></tr><tr><td class="sym">p<sub>∞</sub></td><td class="val">101.3 kPa</td><td>air pressure</td></tr><tr><td class="sym">R</td><td class="val">287.05 J/(kg·K)</td><td>gas constant, dry air</td></tr><tr><td class="sym">γ</td><td class="val">1.4</td><td>ratio of specific heats</td></tr></tbody></table></div></div></div>
+<div class="step"><h3><span class="n">?</span>Find</h3><div class="math"><p class="eq">V(x, y),&nbsp; p(x, y),&nbsp; p on the body,&nbsp; L′, D′</p></div></div>
+</section>
+<section class="part"><h2>The air</h2><div class="step"><h3><span class="n">1</span>Density</h3><div class="math"><p class="eq">ρ = <span class="fr"><span>p</span><span>R T</span></span></p><p class="eq num">ρ = <span class="fr"><span>101 300</span><span>287.05 × 288.15</span></span> = 1.225 kg/m<sup>3</sup></p><p class="eq num">v = <span class="fr"><span>1</span><span>ρ</span></span> = 0.817 m<sup>3</sup>/kg</p></div></div>
+<div class="step"><h3><span class="n">2</span>Speed of sound</h3><div class="math"><p class="eq">c = √<span class="rad">γ R T</span></p><p class="eq num">c = √<span class="rad">1.4 × 287.05 × 288.15</span> = 340.3 m/s</p></div></div>
+<div class="step"><h3><span class="n">3</span>Viscosity</h3><div class="math"><p class="eq">μ = μ<sub>0</sub> (<span class="fr"><span>T</span><span>T<sub>0</sub></span></span>)<sup>3/2</sup> <span class="fr"><span>T<sub>0</sub> + S</span><span>T + S</span></span></p><p class="eq num">μ = 1.716×10<sup>−5</sup> (<span class="fr"><span>288.15</span><span>273.15</span></span>)<sup>3/2</sup> <span class="fr"><span>383.55</span><span>398.55</span></span> = 1.79×10<sup>−5</sup> Pa·s</p></div></div>
+</section>
+<section class="part"><h2>Can we ignore compression and friction?</h2><div class="step"><h3><span class="n">4</span>Mach number</h3><div class="math"><p class="eq">M = <span class="fr"><span>U</span><span>c</span></span></p><p class="eq num">M = <span class="fr"><span>10</span><span>340.3</span></span> = 0.029</p><p class="eq note">M &lt; 0.3 &nbsp;⇒&nbsp; ρ = const &nbsp;✓</p></div></div>
+<div class="step"><h3><span class="n">5</span>Reynolds number</h3><div class="math"><p class="eq">Re = <span class="fr"><span>ρ U D</span><span>μ</span></span></p><p class="eq num">Re = <span class="fr"><span>1.225 × 10 × 0.30</span><span>1.79×10<sup>−5</sup></span></span> = 2.05×10<sup>5</sup></p><p class="eq note">Re ≫ 1 &nbsp;⇒&nbsp; real air separates and leaves a wake</p><p class="eq note">ideal flow drops μ: &nbsp;no wake, no drag</p></div></div>
+</section>
+<section class="part"><h2>Build the flow</h2><div class="step"><h3><span class="n">6</span>Ideal flow</h3><div class="math"><p class="eq">∇ · V = 0,&nbsp;&nbsp; ∇ × V = 0 &nbsp;⇒&nbsp; V = ∇φ,&nbsp;&nbsp; ∇<sup>2</sup>φ = 0</p><p class="eq note">linear &nbsp;⇒&nbsp; solutions add</p></div></div>
+<div class="step"><h3><span class="n">7</span>Stream + doublet</h3><div class="math"><p class="eq">φ = U x + <span class="fr"><span>κ cos θ</span><span>r</span></span>,&nbsp;&nbsp; κ = U a<sup>2</sup></p><p class="eq">φ = U cos θ ( r + <span class="fr"><span>a<sup>2</sup></span><span>r</span></span> )</p></div></div>
+<div class="step"><h3><span class="n">8</span>Velocity</h3><div class="math"><p class="eq">v<sub>r</sub> = <span class="fr"><span>∂φ</span><span>∂r</span></span> = U (1 − <span class="fr"><span>a<sup>2</sup></span><span>r<sup>2</sup></span></span>) cos θ</p><p class="eq">v<sub>θ</sub> = <span class="fr"><span>1</span><span>r</span></span> <span class="fr"><span>∂φ</span><span>∂θ</span></span> = −U (1 + <span class="fr"><span>a<sup>2</sup></span><span>r<sup>2</sup></span></span>) sin θ</p></div></div>
+<div class="step"><h3><span class="n">9</span>On the body, r = a</h3><div class="math"><p class="eq">v<sub>r</sub> = 0 &nbsp;&nbsp;✓ no air through the wall</p><p class="eq">v<sub>θ</sub> = −2U sin θ</p><p class="eq num">|v|<sub>max</sub> = 2U = 20 m/s &nbsp; at θ = ±90°</p></div></div>
+</section>
+<section class="part"><h2>Pressure</h2><div class="step"><h3><span class="n">10</span>Bernoulli</h3><div class="math"><p class="eq">p + ½ ρ V<sup>2</sup> = p<sub>∞</sub> + ½ ρ U<sup>2</sup></p><p class="eq">C<sub>p</sub> = <span class="fr"><span>p − p<sub>∞</sub></span><span>½ ρ U<sup>2</sup></span></span> = 1 − <span class="fr"><span>V<sup>2</sup></span><span>U<sup>2</sup></span></span></p></div></div>
+<div class="step"><h3><span class="n">11</span>On the body</h3><div class="math"><p class="eq">C<sub>p</sub>(θ) = 1 − 4 sin<sup>2</sup>θ</p><p class="eq num">q = ½ ρ U<sup>2</sup> = ½ × 1.225 × 10<sup>2</sup> = 61.2 Pa</p><p class="eq num">front, θ = 180°: &nbsp; C<sub>p</sub> = +1 &nbsp;⇒&nbsp; p − p<sub>∞</sub> = +61.2 Pa</p><p class="eq num">top, θ = 90°: &nbsp; C<sub>p</sub> = −3 &nbsp;⇒&nbsp; p − p<sub>∞</sub> = −183.7 Pa</p></div></div>
+<div class="step"><h3><span class="n">12</span>Force</h3><div class="math"><p class="eq">L′ = −∫<sub>0</sub><sup>2π</sup> p a sin θ dθ,&nbsp;&nbsp; D′ = −∫<sub>0</sub><sup>2π</sup> p a cos θ dθ</p><p class="eq num">C<sub>p</sub>(θ) = C<sub>p</sub>(π − θ) = C<sub>p</sub>(−θ) &nbsp;⇒&nbsp; L′ = 0,&nbsp; D′ = 0</p><p class="eq note">d′Alembert’s paradox: zero drag is the price of μ = 0</p></div></div>
+</section>
+<section class="part"><h2>Add spin</h2><div class="step"><h3><span class="n">13</span>Vortex</h3><div class="math"><p class="eq">v<sub>θ</sub> = −U (1 + <span class="fr"><span>a<sup>2</sup></span><span>r<sup>2</sup></span></span>) sin θ − <span class="fr"><span>Γ</span><span>2π r</span></span></p><p class="eq">Γ = 2π a<sup>2</sup> ω = 2π a U S,&nbsp;&nbsp; S = <span class="fr"><span>ω a</span><span>U</span></span></p><p class="eq num">S = 1.5 &nbsp;⇒&nbsp; ω = 100 rad/s = 955 rpm</p><p class="eq num">Γ = 2π × 0.15 × 10 × 1.5 = 14.14 m<sup>2</sup>/s</p></div></div>
+<div class="step"><h3><span class="n">14</span>Where the air stops</h3><div class="math"><p class="eq">v<sub>θ</sub>(a, θ<sub>s</sub>) = 0 &nbsp;⇒&nbsp; sin θ<sub>s</sub> = −<span class="fr"><span>Γ</span><span>4π a U</span></span></p><p class="eq num">sin θ<sub>s</sub> = −<span class="fr"><span>14.14</span><span>4π × 0.15 × 10</span></span> = −0.75 &nbsp;⇒&nbsp; θ<sub>s</sub> = −48.6°, −131.4°</p><p class="eq note">S &gt; 2 &nbsp;⇒&nbsp; |sin θ<sub>s</sub>| &gt; 1: stagnation point leaves the body</p></div></div>
+<div class="step"><h3><span class="n">15</span>Lift</h3><div class="math"><p class="eq">L′ = ρ U Γ &nbsp;&nbsp;(Kutta–Joukowski)</p><p class="eq num">L′ = 1.225 × 10 × 14.14 = 173.1 N/m</p><p class="eq note">∮ p on the surface, 20 000 panels: &nbsp;L′ = 173.1 N/m,&nbsp; D′ ≈ 10<sup>−15</sup> &nbsp;✓</p></div></div>
+<div class="step"><h3><span class="n">16</span>Fastest air</h3><div class="math"><p class="eq num">v<sub>max</sub> = 2U + <span class="fr"><span>Γ</span><span>2π a</span></span> = 20 + 15 = 35 m/s</p><p class="eq num">p − p<sub>∞</sub> = ½ρ(U<sup>2</sup> − v<sub>max</sub><sup>2</sup>) = −689 Pa</p></div></div>
+</section>
+<section class="part"><h2>What temperature and pressure change</h2><div class="step"><h3><span class="n">17</span>Streamlines</h3><div class="math"><p class="eq">ψ = U ( r − <span class="fr"><span>a<sup>2</sup></span><span>r</span></span> ) sin θ + <span class="fr"><span>Γ</span><span>2π</span></span> ln <span class="fr"><span>r</span><span>a</span></span></p><p class="eq note">no ρ, no T, no p &nbsp;⇒&nbsp; the picture never moves</p></div></div>
+<div class="step"><h3><span class="n">18</span>Forces</h3><div class="math"><p class="eq">Δp ∝ ρ,&nbsp;&nbsp; L′ ∝ ρ,&nbsp;&nbsp; ρ = <span class="fr"><span>p</span><span>R T</span></span></p><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">sea level, 15 °C</td><td class="val">ρ = 1.225</td><td>L′ = 173.1 N/m</td></tr><tr><td class="sym">cold, −20 °C</td><td class="val">ρ = 1.394</td><td>L′ = 197.1 N/m &nbsp;(+13.8%)</td></tr><tr><td class="sym">hot, 35 °C</td><td class="val">ρ = 1.145</td><td>L′ = 161.9 N/m &nbsp;(−6.5%)</td></tr><tr><td class="sym">mile high, 83 kPa, 5 °C</td><td class="val">ρ = 1.040</td><td>L′ = 147.0 N/m &nbsp;(−15.1%)</td></tr></tbody></table></div></div></div>
+</section>
+<section class="part"><h2>The other bodies</h2><div class="step"><h3><span class="n">19</span>Half body</h3><div class="math"><p class="eq">ψ = U r sin θ + <span class="fr"><span>m θ</span><span>2π</span></span>,&nbsp;&nbsp; body: ψ = <span class="fr"><span>m</span><span>2</span></span></p><p class="eq num">far width 2a = <span class="fr"><span>m</span><span>U</span></span> &nbsp;⇒&nbsp; m = 2 × 10 × 0.15 = 3.0 m<sup>2</sup>/s</p><p class="eq num">nose: &nbsp;x = −<span class="fr"><span>m</span><span>2π U</span></span> = −4.8 cm</p></div></div>
+<div class="step"><h3><span class="n">20</span>Oval</h3><div class="math"><p class="eq">ψ = U y + <span class="fr"><span>m</span><span>2π</span></span> (θ<sub>1</sub> − θ<sub>2</sub>),&nbsp;&nbsp; x<sub>s</sub> = ± √<span class="rad">b<sup>2</sup> + <span class="fr"><span>m b</span><span>π U</span></span></span></p><p class="eq num">b = 0.15 m,&nbsp; m = πUb = 4.71 m<sup>2</sup>/s</p><p class="eq num">x<sub>s</sub> = ±√<span class="rad">0.0225 + 0.0225</span> = ±21.2 cm</p></div></div>
+</section>
+<section class="part"><h2>Ideal flow on the screen</h2><div class="step"><h3><span class="n">21</span>Moving cylinder (home page)</h3><div class="math"><p class="eq">W = U − V<sub>c</sub></p><p class="eq">V = U + <span class="fr"><span>a<sup>2</sup></span><span>r<sup>2</sup></span></span> [ W − 2 (W · r̂) r̂ ]</p><p class="eq note">the air sees the wind relative to the moving body</p></div></div>
+<div class="step"><h3><span class="n">22</span>Tracer step (RK2)</h3><div class="math"><p class="eq">x<sub>n+½</sub> = x<sub>n</sub> + ½ V(x<sub>n</sub>) Δt</p><p class="eq">x<sub>n+1</sub> = x<sub>n</sub> + V(x<sub>n+½</sub>) Δt</p></div></div>
+</section>
+<section class="part"><h2>Now switch friction on</h2><div class="step"><h3><span class="n">23</span>What ideal flow got wrong</h3><div class="math"><p class="eq num">D′ = 0 &nbsp;(step 12) &nbsp;&nbsp; vs &nbsp;&nbsp; every measurement: D′ &gt; 0</p><p class="eq note">the missing term is viscosity: air sticks to the surface</p></div></div>
+<div class="step"><h3><span class="n">24</span>Navier–Stokes</h3><div class="math"><p class="eq">∇ · V = 0</p><p class="eq"><span class="fr"><span>∂V</span><span>∂t</span></span> + (V · ∇) V = −<span class="fr"><span>1</span><span>ρ</span></span> ∇p + ν ∇<sup>2</sup>V</p><p class="eq note">ideal flow is this with ν = 0 and no spin in the air</p></div></div>
+<div class="step"><h3><span class="n">25</span>One number left</h3><div class="math"><p class="eq">x → x/D,&nbsp; V → V/U,&nbsp; t → tU/D,&nbsp; p → p/ρU<sup>2</sup></p><p class="eq"><span class="fr"><span>∂V</span><span>∂t</span></span> + (V · ∇) V = −∇p + <span class="fr"><span>1</span><span>Re</span></span> ∇<sup>2</sup>V,&nbsp;&nbsp; Re = <span class="fr"><span>U D</span><span>ν</span></span></p><p class="eq note">same Re &nbsp;⇒&nbsp; same picture, whatever the size or speed</p></div></div>
+<div class="step"><h3><span class="n">26</span>A case that fits</h3><div class="math"><p class="eq num">ν = 1.461×10<sup>−5</sup> m<sup>2</sup>/s &nbsp;(15 °C, sea level)</p><p class="eq num">D = 3 mm,&nbsp; Re = 100 &nbsp;⇒&nbsp; U = <span class="fr"><span>Re ν</span><span>D</span></span> = <span class="fr"><span>100 × 1.461×10<sup>−5</sup></span><span>0.003</span></span> = 0.487 m/s</p><p class="eq note">steps 0–22 used Re = 2×10<sup>5</sup>: far too turbulent to resolve live</p></div></div>
+</section>
+<section class="part"><h2>Solving it</h2><div class="step"><h3><span class="n">27</span>Grid</h3><div class="math"><p class="eq num">180 × 80 cells,&nbsp; h = D/10,&nbsp; domain 18 D × 8 D</p><p class="eq note">staggered: p at centres, u and v on faces</p></div></div>
+<div class="step"><h3><span class="n">28</span>Projection step</h3><div class="math"><p class="eq">V* = V<sup>n</sup> + Δt [ −(V·∇)V + <span class="fr"><span>1</span><span>Re</span></span> ∇<sup>2</sup>V ]</p><p class="eq">∇<sup>2</sup>p = <span class="fr"><span>1</span><span>Δt</span></span> ∇ · V*</p><p class="eq">V<sup>n+1</sup> = V* − Δt ∇p &nbsp;⇒&nbsp; ∇ · V<sup>n+1</sup> = 0</p><p class="eq num">max |∇ · V| ≈ 10<sup>−14</sup></p></div></div>
+<div class="step"><h3><span class="n">29</span>The cylinder</h3><div class="math"><p class="eq">inside the cylinder: &nbsp;V* ← 0</p><p class="eq">F = <span class="fr"><span>1</span><span>Δt</span></span> Σ<sub>inside</sub> V* h<sup>2</sup></p><p class="eq note">the push needed to stop the air there is the air’s force on the cylinder</p></div></div>
+<div class="step"><h3><span class="n">30</span>Time step</h3><div class="math"><p class="eq">Δt = min( <span class="fr"><span>0.4 h</span><span>|u|<sub>max</sub> + |v|<sub>max</sub></span></span> ,&nbsp; <span class="fr"><span>0.4 h<sup>2</sup> Re</span><span>4</span></span> )</p><p class="eq num">Δt = min( <span class="fr"><span>0.4 × 0.1</span><span>2.02</span></span> , <span class="fr"><span>0.4 × 0.01 × 100</span><span>4</span></span> ) = min(0.0198, 0.1) = 0.0198</p></div></div>
+<div class="step"><h3><span class="n">31</span>Edges</h3><div class="math"><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">inlet</td><td class="val">V = ideal flow past the cylinder (step 8)</td><td>so the inlet does not squeeze the flow</td></tr><tr><td class="sym">top, bottom, outlet</td><td class="val">p = 0,&nbsp; ∂V/∂n = 0</td><td>open</td></tr></tbody></table></div></div></div>
+</section>
+<section class="part"><h2>What comes out</h2><div class="step"><h3><span class="n">32</span>Coefficients</h3><div class="math"><p class="eq">C<sub>D</sub> = <span class="fr"><span>F<sub>x</sub></span><span>½ ρ U<sup>2</sup> D</span></span>,&nbsp;&nbsp; C<sub>L</sub> = <span class="fr"><span>F<sub>y</sub></span><span>½ ρ U<sup>2</sup> D</span></span>,&nbsp;&nbsp; St = <span class="fr"><span>f D</span><span>U</span></span></p><p class="eq num">Re = 100: &nbsp; C<sub>D</sub> = 1.52,&nbsp;&nbsp; C<sub>L</sub> = ± 0.36,&nbsp;&nbsp; St = 0.169</p></div></div>
+<div class="step"><h3><span class="n">33</span>Back to real units</h3><div class="math"><p class="eq num">f = <span class="fr"><span>St U</span><span>D</span></span> = <span class="fr"><span>0.169 × 0.487</span><span>0.003</span></span> = 27.5 Hz</p><p class="eq num">D′ = C<sub>D</sub> ½ ρ U<sup>2</sup> D = 1.52 × ½ × 1.225 × 0.487<sup>2</sup> × 0.003 = 0.66 mN/m</p><p class="eq note">27 Hz: a low hum. This is why wires sing in wind.</p></div></div>
+<div class="step"><h3><span class="n">34</span>Against experiments</h3><div class="math"><p class="eq">St<sub>exp</sub> = −<span class="fr"><span>3.3265</span><span>Re</span></span> + 0.1816 + 1.6×10<sup>−4</sup> Re &nbsp;&nbsp;(Williamson)</p><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">Re = 40</td><td class="val">no shedding, C<sub>D</sub> = 1.58</td><td>experiments: steady below Re ≈ 47 ✓</td></tr><tr><td class="sym">Re = 60</td><td class="val">St = 0.143</td><td>0.136 &nbsp;(+5%)</td></tr><tr><td class="sym">Re = 100</td><td class="val">St = 0.169</td><td>0.164 &nbsp;(+3%)</td></tr><tr><td class="sym">Re = 150</td><td class="val">St = 0.184</td><td>0.183 &nbsp;(+0.4%)</td></tr><tr><td class="sym">Re = 200</td><td class="val">St = 0.188</td><td>0.197 &nbsp;(−5%)</td></tr></tbody></table></div></div></div>
+<div class="step"><h3><span class="n">35</span>Where it is weak</h3><div class="math"><p class="eq num">C<sub>D</sub> = 1.52 &nbsp;vs&nbsp; ≈ 1.34 published &nbsp;(+13%)</p><p class="eq num">finer grid (h = D/12), domain 28 D × 20 D: &nbsp;C<sub>D</sub> = 1.47,&nbsp; St = 0.167</p><p class="eq note">most of the gap is the coarse cylinder surface, not the tunnel size</p></div></div>
+</section>
+<section class="part"><h2>Result</h2><div class="step"><h3><span class="n">✓</span></h3><div class="math"><div class="boxed"><p class="eq">ideal: &nbsp;V<sub>body</sub> ≤ 2U,&nbsp; Δp ∈ [−3q, +q],&nbsp; D′ = 0,&nbsp; spin lift L′ = ρUΓ</p><p class="eq">real, Re = 100: &nbsp;C<sub>D</sub> = 1.52,&nbsp; C<sub>L</sub> = ± 0.36,&nbsp; St = 0.169</p><p class="eq">friction adds the wake, the drag and a 27.5 Hz swing on a 3 mm wire</p></div></div></div>
+</section>
+
+  </div>
+  <div class="inner endlinks">
+    <a class="text-link" href="airflow.html"><span aria-hidden="true">←</span> Back to the simulation</a>
+  </div>
+</main>
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+</body>
+</html>

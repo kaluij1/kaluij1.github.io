@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forced Convection Simulator</title>
+<meta name="description" content="A live simulation by John Kaluiji: air flowing over a heated aluminum plate, solved in the browser with the Navier-Stokes and energy equations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* A wind tunnel window across the page, controls under it, then the numbers and how far to trust them.
+     Temperature runs blue (inlet) to red (hottest plate). Everything else stays in ink. */
+  :root { --read: 42rem; --good: #1F8A5B; --warn: #9A5B00; --cold: #2c5fc9; --hot: #d5402b; }
+  .sim-head { padding-block: clamp(36px, 6vw, 64px) clamp(20px, 3vw, 28px); }
+  .sim-head h1 { margin: 0 0 14px; font-family: var(--font-display); font-weight: 400; font-size: clamp(2.3rem, 5.6vw, 3.6rem); line-height: 1.04; letter-spacing: -.02em; max-width: 16em; }
+  .sim-head .lede { margin: 0; max-width: var(--read); font-size: clamp(1.05rem, 1.9vw, 1.2rem); line-height: 1.5; }
+  .card-box { border: 1px solid var(--rule); border-radius: 12px; background: var(--card); }
+  .tunnel { position: relative; padding: 12px 14px 12px; }
+  #tunnel { display: block; width: 100%; border-radius: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 10px; font-size: .8rem; color: var(--muted); }
+  .chip { padding: 3px 9px; border: 1px solid var(--rule); border-radius: 99px; background: var(--bg); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chip.state { color: var(--warn); border-color: currentColor; font-weight: 600; }
+  .chip.state.ok { color: var(--good); }
+  .cbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-top: 10px; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cbar .bar { height: 10px; border-radius: 5px; border: 1px solid var(--rule); background: linear-gradient(90deg, #2c5fc9, #7fb0e8 25%, #f2efe9 50%, #f0a57c 75%, #d5402b); }
+  .controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 26px; padding: 18px; margin-top: 18px; }
+  .ctl-label { display: block; font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .row { display: flex; align-items: baseline; gap: 10px; }
+  .row label { font-size: .92rem; }
+  .row output { margin-left: auto; font-variant-numeric: tabular-nums; font-size: .92rem; font-weight: 500; white-space: nowrap; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button, .btn { font: inherit; font-size: .88rem; font-weight: 500; padding: 7px 13px; border-radius: 99px; cursor: pointer; border: 1px solid var(--rule); background: var(--bg); color: var(--muted); transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
+  .seg button:hover, .btn:hover { color: var(--fg); border-color: #CFC9C0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .seg button:focus-visible, .btn:focus-visible, input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .hint { margin: 6px 0 0; font-size: .8rem; color: var(--muted); line-height: 1.45; }
+  .numbers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+  .num-card { padding: 16px 18px; }
+  .num-card h2 { margin: 0 0 10px; font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-family: var(--font-body); }
+  .num-card dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 14px; font-size: .92rem; }
+  .num-card dt { color: var(--muted); }
+  .num-card dd { margin: 0; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .num-card dd.big { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.1; }
+  .num-card dt.big { align-self: end; }
+  .plots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+  .plot { padding: 16px 18px 12px; position: relative; }
+  .plot h2 { margin: 0 0 2px; font-size: .95rem; font-weight: 600; font-family: var(--font-body); }
+  .plot p { margin: 0 0 8px; font-size: .82rem; color: var(--muted); }
+  .plot canvas { display: block; width: 100%; height: 210px; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 0; padding: 0; list-style: none; font-size: .8rem; color: var(--muted); }
+  .key i { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--fg); vertical-align: middle; margin-right: 6px; }
+  .key i.dash { border-top-style: dashed; border-color: var(--muted); }
+  .key i.dot { border-top-style: dotted; border-color: var(--muted); }
+  .ptip { position: absolute; display: none; pointer-events: none; white-space: nowrap; padding: 6px 9px; font-size: .78rem; line-height: 1.45; font-variant-numeric: tabular-nums; background: var(--card); border: 1px solid var(--rule); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+  .checks { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .checks li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: baseline; font-size: .95rem; max-width: 60rem; }
+  .pill { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 2px 9px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+  .pill.ok { color: var(--good); } .pill.warn { color: var(--warn); } .pill.note { color: var(--muted); }
+  section.pad { padding-block: clamp(36px, 5vw, 60px); }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 40px; }
+  .two h2, .prose h2 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 400; font-size: clamp(1.4rem, 2.4vw, 1.7rem); line-height: 1.2; }
+  .two ul { margin: 0; padding-left: 1.1rem; font-size: .96rem; }
+  .two li { margin-bottom: 8px; }
+  .prose { max-width: var(--read); margin-top: 28px; }
+  .prose p { margin: 0 0 14px; }
+  .prose a { color: var(--accent); }
+  @media (max-width: 900px) { .controls, .numbers, .plots, .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="simulations.html">Simulations</a>
+      <a href="math-convection.html">The math</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="sim-head">
+    <div class="inner">
+      <p class="eyebrow">Live simulation · Heat transfer</p>
+      <h1>Cooling a hot plate with moving air</h1>
+      <p class="lede">Air blows across an aluminum plate that is heated from below at a steady rate. Your browser solves the Navier-Stokes equations for the air and the energy equation for its temperature, hundreds of time steps every second. Change the wind, the heating or the air temperature and watch the plate find a new balance.</p>
+      <a class="text-link" href="math-convection.html" style="margin-top:18px">The math behind it <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+  <section aria-label="Simulator">
+    <div class="inner">
+      <div class="card-box tunnel">
+        <div class="chips">
+          <span class="chip state" id="cState">Warming up</span>
+          <span class="chip" id="cTime"></span>
+          <span class="chip" id="cSpeed"></span>
+          <span class="chip">Height drawn 2× taller than true scale</span>
+        </div>
+        <canvas id="tunnel" role="img" aria-label="Side view of air flowing left to right over a heated plate on the floor. Colour shows air temperature from blue at the inlet to red at the plate."></canvas>
+        <div class="cbar"><span id="cLo"></span><div class="bar"></div><span id="cHi"></span></div>
+      </div>
+
+      <div class="card-box controls">
+        <div>
+          <div class="row"><label for="U">Inlet air speed</label><output id="oU" for="U"></output></div>
+          <input type="range" id="U" min="0.3" max="2" step="0.1" value="1">
+        </div>
+        <div>
+          <div class="row"><label for="Q">Heat flux into the plate</label><output id="oQ" for="Q"></output></div>
+          <input type="range" id="Q" min="50" max="1000" step="10" value="400">
+        </div>
+        <div>
+          <div class="row"><label for="TI">Inlet air temperature</label><output id="oTI" for="TI"></output></div>
+          <input type="range" id="TI" min="0" max="40" step="1" value="20">
+        </div>
+        <div>
+          <span class="ctl-label" id="lblShow">Show the flow as</span>
+          <div class="seg" role="group" aria-labelledby="lblShow" id="show">
+            <button type="button" data-v="tracers" aria-pressed="true">Moving tracers</button>
+            <button type="button" data-v="vectors" aria-pressed="false">Velocity arrows</button>
+            <button type="button" data-v="none" aria-pressed="false">Temperature only</button>
+          </div>
+        </div>
+        <div>
+          <span class="ctl-label" id="lblCap">Plate heat capacity</span>
+          <div class="seg" role="group" aria-labelledby="lblCap" id="cap">
+            <button type="button" data-a="1000" aria-pressed="true">÷1000, settles in seconds</button>
+            <button type="button" data-a="1" aria-pressed="false">Real aluminum</button>
+          </div>
+          <p class="hint" id="capHint"></p>
+        </div>
+        <div>
+          <span class="ctl-label">Run</span>
+          <div class="seg">
+            <button type="button" class="btn" id="pause">Pause</button>
+            <button type="button" class="btn" id="reset">Restart from cold</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="numbers">
+        <div class="card-box num-card">
+          <h2>Results</h2>
+          <dl>
+            <dt class="big">Hottest point on the plate</dt><dd class="big" id="rTmax"></dd>
+            <dt class="big">Air leaving, flow average</dt><dd class="big" id="rTout"></dd>
+            <dt class="big">Heat carried off by the air</dt><dd class="big" id="rQ"></dd>
+            <dt>Coolest point on the plate</dt><dd id="rTmin"></dd>
+            <dt>Hottest air leaving</dt><dd id="rTpk"></dd>
+          </dl>
+        </div>
+        <div class="card-box num-card">
+          <h2>Energy balance, plate 100 mm deep</h2>
+          <dl>
+            <dt>Heater power in</dt><dd id="eIn"></dd>
+            <dt>Plate to air</dt><dd id="eConv"></dd>
+            <dt>Leaving with the air</dt><dd id="eAir"></dd>
+            <dt>Still warming the plate</dt><dd id="eSt"></dd>
+          </dl>
+          <h2 style="margin-top:16px">Heat transfer</h2>
+          <dl>
+            <dt>Average coefficient h</dt><dd id="hBar"></dd>
+            <dt>Textbook, even wall temperature</dt><dd id="hUWT"></dd>
+            <dt>Textbook, even heat flux</dt><dd id="hUHF"></dd>
+            <dt>Nusselt number</dt><dd id="nNu"></dd>
+          </dl>
+        </div>
+        <div class="card-box num-card">
+          <h2>Solver, this instant</h2>
+          <dl>
+            <dt>Grid</dt><dd id="sGrid"></dd>
+            <dt>Cell size</dt><dd id="sCell"></dd>
+            <dt>Time step</dt><dd id="sDt"></dd>
+            <dt>Limited by</dt><dd id="sLim"></dd>
+            <dt>Courant number, max 0.4</dt><dd id="sCfl"></dd>
+            <dt>Diffusion number, max 0.4</dt><dd id="sDn"></dd>
+            <dt>Largest ∇·V left over</dt><dd id="sDiv"></dd>
+            <dt>Reynolds, Prandtl</dt><dd id="sRe"></dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div class="card-box plot">
+          <h2>Plate temperature along its length</h2>
+          <p>°C, from the leading edge to the trailing edge</p>
+          <canvas id="pT" role="img" aria-label="Line chart of plate temperature against distance from the leading edge"></canvas>
+          <div class="ptip" id="tipT"></div>
+        </div>
+        <div class="card-box plot">
+          <h2>Local heat transfer coefficient</h2>
+          <p>W/m²·K, computed against two textbook laminar results</p>
+          <canvas id="pH" role="img" aria-label="Line chart of the local heat transfer coefficient along the plate, with two textbook curves for comparison"></canvas>
+          <ul class="key"><li><i></i>Computed</li><li><i class="dash"></i>Textbook, even heat flux</li><li><i class="dot"></i>Textbook, even wall temperature</li></ul>
+          <div class="ptip" id="tipH"></div>
+        </div>
+      </div>
+
+      <ul class="checks" id="checks"></ul>
+    </div>
+  </section>
+
+  <section class="pad">
+    <div class="inner">
+      <div class="two">
+        <div>
+          <h2>Computed from the equations</h2>
+          <ul>
+            <li>Air velocity and pressure: the 2D incompressible Navier-Stokes equations on a 100 × 48 grid, advanced with a projection method. The pressure equation is solved exactly every step, so mass is conserved to round-off.</li>
+            <li>Air temperature: the advection-diffusion energy equation on the same grid, with a flux limiter so it cannot overshoot.</li>
+            <li>Plate temperature: heat conduction along the aluminum, fed by the heater and drained by the air above it.</li>
+            <li>Every number in the panels above, including the energy balance, which closes on its own once the plate settles.</li>
+            <li>The time step, recalculated each step from the Courant and diffusion limits.</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Drawn for the eye</h2>
+          <ul>
+            <li>Colours are blended smoothly between grid cells. The solver itself has one temperature per cell.</li>
+            <li>Tracers and arrows follow the computed velocity, but tracers move at a slowed, steady pace so you can follow them. They are not part of the solution.</li>
+            <li>The tunnel is drawn twice as tall as it is, and the plate thicker than its 3 mm.</li>
+            <li>The ÷1000 heat capacity setting changes how fast the plate warms, not where it ends up. Choose real aluminum to see the true warm-up, which takes about half an hour of simulated time.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="prose">
+        <h2>How far to trust it</h2>
+        <p>With conduction in the plate switched off, the solver's average heat transfer coefficient lands within 3% of the textbook laminar result for an evenly heated plate, at every speed from 0.3 to 2 m/s. With the aluminum switched on, the plate spreads heat sideways so well that it ends up nearly one temperature, and the coefficient follows the even-temperature curve instead. That is the real behaviour of a thick conductive plate, and you can see it in the chart on the right.</p>
+        <p>What it leaves out: buoyancy, radiation, turbulence, the third dimension, and the change of air properties as it warms. Properties are taken at the inlet temperature. The derivation, the numerical method and a worked case are on <a href="math-convection.html">the math page</a>.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+
+<script src="convection-model.js"></script>
+<script>
+(function () {
+  "use strict";
+  var M = window.ConvectionModel, $ = function (id) { return document.getElementById(id); };
+  var ui = { U: 1, q: 400, Tin: 20, accel: 1000, show: "tracers", paused: false };
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  if (reduce.matches) ui.show = "vectors";
+  var s, d, cv = $("tunnel"), ctx = cv.getContext("2d"), W = 0, Hc = 0, dpr = 1;
+  var VEX = 2, PLATE_PX = 22, AXIS_PX = 24, PAD_L = 0;
+  var off = document.createElement("canvas"), octx, img;
+  var scaleHi = 30, wall0 = 0, simRate = 0, rateT = 0, rateS = 0;
+
+  /* ---------- colour map: continuous blue to red ---------- */
+  var STOPS = [[44, 95, 201], [127, 176, 232], [242, 239, 233], [240, 165, 124], [213, 64, 43]], LUT = new Uint8Array(256 * 3);
+  for (var n = 0; n < 256; n++) { var ff = n / 255 * 4, k = Math.min(3, Math.floor(ff)), t = ff - k; for (var c = 0; c < 3; c++) LUT[n * 3 + c] = Math.round(STOPS[k][c] + (STOPS[k + 1][c] - STOPS[k][c]) * t); }
+  function col(T) { var v = Math.max(0, Math.min(255, Math.round((T - ui.Tin) / (scaleHi - ui.Tin) * 255))); return "rgb(" + LUT[v * 3] + "," + LUT[v * 3 + 1] + "," + LUT[v * 3 + 2] + ")"; }
+
+  function fresh() {
+    s = M.create({ U: ui.U, q: ui.q, Tin: ui.Tin, accel: ui.accel });
+    off.width = s.nx; off.height = s.ny; octx = off.getContext("2d"); img = octx.createImageData(s.nx, s.ny);
+    scaleHi = ui.Tin + 10; buildTracers(); wall0 = performance.now(); rateT = wall0; rateS = 0;
+  }
+  function layout() {
+    var r = cv.parentElement.getBoundingClientRect(); W = r.width - 28;
+    var fluid = W * (s.H / s.L) * VEX; Hc = fluid + PLATE_PX + AXIS_PX;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.height = Hc + "px"; cv.width = Math.round(W * dpr); cv.height = Math.round(Hc * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function fluidH() { return Hc - PLATE_PX - AXIS_PX; }
+  function X(x) { return x / s.L * W; }
+  function Y(y) { return fluidH() * (1 - y / s.H); }
+
+  /* ---------- velocity at any point: bilinear between grid values (drawing only) ---------- */
+  function velAt(x, y, o) {
+    var nx = s.nx, ny = s.ny, Wd = nx + 1, fx = Math.max(0, Math.min(nx - 1e-6, x / s.dx)), i = Math.floor(fx), tx = fx - i;
+    var fy = Math.max(0, Math.min(ny - 1 - 1e-6, y / s.dy - 0.5)), j = Math.floor(fy), ty = fy - j;
+    o.u = (s.u[i + j * Wd] * (1 - tx) + s.u[i + 1 + j * Wd] * tx) * (1 - ty) + (s.u[i + (j + 1) * Wd] * (1 - tx) + s.u[i + 1 + (j + 1) * Wd] * tx) * ty;
+    var gx = Math.max(0, Math.min(nx - 1 - 1e-6, x / s.dx - 0.5)), i2 = Math.floor(gx), sx2 = gx - i2, gy = Math.max(0, Math.min(ny - 1e-6, y / s.dy)), j2 = Math.floor(gy), sy2 = gy - j2;
+    o.v = (s.v[i2 + j2 * nx] * (1 - sx2) + s.v[i2 + 1 + j2 * nx] * sx2) * (1 - sy2) + (s.v[i2 + (j2 + 1) * nx] * (1 - sx2) + s.v[i2 + 1 + (j2 + 1) * nx] * sx2) * sy2;
+    return o;
+  }
+  var P = [], NT = 14, vo = {}, tclock = 0;
+  function spawn(p, anywhere) { p.x = anywhere ? Math.random() * s.L : 0; p.y = Math.random() * s.H; p.age = 0; p.life = 4 + Math.random() * 6; p.n = 0; }
+  function buildTracers() { P = []; for (var i = 0; i < 420; i++) { var p = { tx: new Float32Array(NT), ty: new Float32Array(NT) }; spawn(p, true); p.age = Math.random() * p.life; P.push(p); } }
+  function moveTracers(dtWall) {
+    var ts = s.L / (3.5 * s.U) , h = dtWall * ts;       // display clock: the free stream crosses the window in 3.5 s
+    tclock += dtWall; var rec = tclock > 0.04; if (rec) tclock = 0;
+    for (var i = 0; i < P.length; i++) {
+      var p = P[i]; p.age += dtWall;
+      if (p.age > p.life) { spawn(p, true); continue; }
+      velAt(p.x, p.y, vo); var mx = p.x + vo.u * h / 2, my = p.y + vo.v * h / 2; velAt(mx, my, vo);
+      p.x += vo.u * h; p.y += vo.v * h;
+      if (p.x > s.L || p.x < 0 || p.y > s.H || p.y < 0) { spawn(p, false); continue; }
+      if (rec) { var px = X(p.x), py = Y(p.y); if (p.n < NT) { p.tx[p.n] = px; p.ty[p.n] = py; p.n++; } else { p.tx.copyWithin(0, 1); p.ty.copyWithin(0, 1); p.tx[NT - 1] = px; p.ty[NT - 1] = py; } }
+    }
+  }
+
+  /* ---------- draw ---------- */
+  function draw() {
+    var nx = s.nx, ny = s.ny, fh = fluidH(), i, j, data = img.data, span = scaleHi - ui.Tin;
+    for (j = 0; j < ny; j++) for (i = 0; i < nx; i++) {
+      var v = Math.round((s.T[i + j * nx] - ui.Tin) / span * 255); v = v < 0 ? 0 : v > 255 ? 255 : v;
+      var q = (i + (ny - 1 - j) * nx) * 4; data[q] = LUT[v * 3]; data[q + 1] = LUT[v * 3 + 1]; data[q + 2] = LUT[v * 3 + 2]; data[q + 3] = 255;
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.clearRect(0, 0, W, Hc);
+    ctx.imageSmoothingEnabled = true; ctx.drawImage(off, 0, 0, W, fh);
+    // floor and plate
+    ctx.fillStyle = "#8b9199"; ctx.fillRect(0, fh, W, 2);
+    var x0 = X(s.i0 * s.dx), cw = X(s.dx);
+    for (i = 0; i < s.np; i++) { ctx.fillStyle = col(s.Tw[i]); ctx.fillRect(x0 + i * cw - 0.5, fh, cw + 1, PLATE_PX - 6); }
+    ctx.strokeStyle = "#24272B"; ctx.lineWidth = 1.2; ctx.strokeRect(x0, fh, s.np * cw, PLATE_PX - 6);
+    // heater arrows under the plate
+    ctx.strokeStyle = "#24272B"; ctx.fillStyle = "#24272B"; ctx.lineWidth = 1;
+    for (i = 0; i < 9; i++) { var ax = x0 + (i + 0.5) * s.np * cw / 9, ay = fh + PLATE_PX - 5; ctx.beginPath(); ctx.moveTo(ax, ay + 7); ctx.lineTo(ax, ay + 1); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ax, ay - 1); ctx.lineTo(ax - 3, ay + 4); ctx.lineTo(ax + 3, ay + 4); ctx.closePath(); ctx.fill(); }
+    // axis
+    ctx.font = "11px 'Albert Sans', sans-serif"; ctx.fillStyle = "#5D6269"; ctx.textBaseline = "top";
+    for (var mm = 0; mm <= 200; mm += 50) { var tx = X(mm / 1000); ctx.textAlign = mm === 0 ? "left" : mm === 200 ? "right" : "center"; ctx.fillText(mm + " mm", tx, fh + PLATE_PX + 6); }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("heater, " + ui.q + " W/m²", x0 + s.np * cw + 8, fh + PLATE_PX - 4);
+    ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fillText("air in →", 6, 14); ctx.textAlign = "right"; ctx.fillText("open to the room above, 30 mm", W - 6, 14); ctx.textAlign = "left"; ctx.fillStyle = "#5D6269";
+    if (ui.show === "tracers") {
+      ctx.lineWidth = 1.1; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      for (var b = 0; b < 3; b++) {
+        ctx.beginPath();
+        for (i = 0; i < P.length; i++) { var p = P[i]; if (p.n < 2) continue; var fd = Math.min(1, p.age / 0.5, (p.life - p.age) / 0.5); if (Math.min(2, Math.floor(fd * 3)) !== b) continue; ctx.moveTo(p.tx[0], p.ty[0]); for (j = 1; j < p.n; j++) ctx.lineTo(p.tx[j], p.ty[j]); }
+        ctx.strokeStyle = "rgba(255,255,255," + (0.22 + 0.2 * b) + ")"; ctx.stroke();
+      }
+    } else if (ui.show === "vectors") {
+      ctx.strokeStyle = "rgba(36,39,43,.7)"; ctx.fillStyle = "rgba(36,39,43,.7)"; ctx.lineWidth = 1;
+      var stepX = s.L / 26, len = X(stepX) * 0.82 / Math.max(s.U, 1e-6);
+      for (var yy = 0; yy < 12; yy++) for (var xx = 0; xx < 26; xx++) {
+        var px = (xx + 0.5) * stepX, py = s.H * Math.pow((yy + 0.35) / 12, 1.6); velAt(px, py, vo);
+        var x1 = X(px), y1 = Y(py), dxp = vo.u * len, dyp = -vo.v * len * VEX, L2 = Math.sqrt(dxp * dxp + dyp * dyp);
+        if (L2 < 1.5) { ctx.beginPath(); ctx.arc(x1, y1, 1, 0, 6.3); ctx.fill(); continue; }
+        var ex = x1 + dxp, ey = y1 + dyp, ux = dxp / L2, uy = dyp / L2;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - ux * 4 - uy * 2.2, ey - uy * 4 + ux * 2.2); ctx.lineTo(ex - ux * 4 + uy * 2.2, ey - uy * 4 - ux * 2.2); ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+
+  /* ---------- small line charts ---------- */
+  var plots = {};
+  function plot(id, series, yFmt, tipId) {
+    var c = $(id), r = c.getBoundingClientRect(), w = r.width, h = r.height, g = c.getContext("2d");
+    if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    var L = 44, Rr = 10, T = 8, B = 24, lo = Infinity, hi = -Infinity, xm = s.np * s.dx * 1000;
+    series.forEach(function (S) { S.y.forEach(function (v, i) { if (S.clip && i < 3) return; if (v < lo) lo = v; if (v > hi) hi = v; }); });
+    if (hi - lo < 1e-6) { hi += 1; lo -= 1; }
+    var raw = (hi - lo) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), st = [1, 2, 2.5, 5, 10].map(function (m) { return m * mag; }).filter(function (v) { return v >= raw; })[0];
+    lo = Math.floor(lo / st) * st; hi = Math.ceil(hi / st) * st;
+    var px = function (x) { return L + x / xm * (w - L - Rr); }, py = function (y) { return T + (1 - (y - lo) / (hi - lo)) * (h - T - B); };
+    g.font = "11px 'Albert Sans', sans-serif"; g.fillStyle = "#5D6269"; g.strokeStyle = "#E3DFD8"; g.lineWidth = 1; g.textAlign = "right"; g.textBaseline = "middle";
+    for (var y = lo; y <= hi + st / 2; y += st) { g.beginPath(); g.moveTo(L, py(y)); g.lineTo(w - Rr, py(y)); g.stroke(); g.fillText(yFmt(y), L - 6, py(y)); }
+    g.textAlign = "center"; g.textBaseline = "top";
+    for (var x = 0; x <= xm + 1; x += 30) g.fillText(x + (x === 120 ? " mm" : ""), px(x) - (x === 120 ? 10 : 0), h - B + 6);
+    g.save(); g.beginPath(); g.rect(L, T - 2, w - L - Rr, h - T - B + 4); g.clip();
+    series.forEach(function (S) {
+      g.beginPath(); g.setLineDash(S.dash || []); g.strokeStyle = S.color; g.lineWidth = S.w || 2;
+      S.y.forEach(function (v, i) { var X2 = px(S.x[i]), Y2 = py(v); if (i) g.lineTo(X2, Y2); else g.moveTo(X2, Y2); }); g.stroke();
+    });
+    g.restore(); g.setLineDash([]);
+    plots[id] = { series: series, px: px, L: L, R: w - Rr, xm: xm, fmt: yFmt, tip: tipId, w: w };
+  }
+  function attachTip(id) {
+    var c = $(id);
+    c.addEventListener("pointermove", function (e) {
+      var p = plots[id]; if (!p) return; var r = c.getBoundingClientRect(), mx = e.clientX - r.left, tip = $(p.tip);
+      var xv = (mx - p.L) / (p.R - p.L) * p.xm; if (xv < 0 || xv > p.xm) { tip.style.display = "none"; return; }
+      var i = Math.max(0, Math.min(s.np - 1, Math.round(xv / (s.dx * 1000) - 0.5)));
+      tip.innerHTML = "<b>" + Math.round(p.series[0].x[i]) + " mm</b><br>" + p.series.map(function (S) { return S.name + ": " + p.fmt(S.y[i], true); }).join("<br>");
+      tip.style.display = "block"; tip.style.left = Math.max(4, Math.min(p.w - tip.offsetWidth, mx + 12)) + "px"; tip.style.top = "64px";
+    });
+    c.addEventListener("pointerleave", function () { $(plots[id] ? plots[id].tip : "tipT").style.display = "none"; });
+  }
+  attachTip("pT"); attachTip("pH");
+
+  /* ---------- numbers ---------- */
+  function f(x, n) { return x.toLocaleString("en-US", { minimumFractionDigits: n, maximumFractionDigits: n }); }
+  function readouts() {
+    d = M.diagnostics(s);
+    var a = s.air, st = d.Qin - d.Qconv, steady = Math.abs(st) < 0.01 * d.Qin && Math.abs(d.Qair - d.Qin) < 0.02 * d.Qin;
+    $("oU").textContent = f(ui.U, 1) + " m/s"; $("oQ").textContent = ui.q + " W/m²"; $("oTI").textContent = ui.Tin + " °C";
+    $("cState").textContent = steady ? "Steady" : "Warming up: " + Math.round(d.Qconv / d.Qin * 100) + "% of the heat is reaching the air";
+    $("cState").className = "chip state" + (steady ? " ok" : "");
+    $("cTime").textContent = "Simulated time " + f(s.t, s.t < 100 ? 2 : 0) + " s";
+    $("cSpeed").textContent = simRate ? "Running at " + f(simRate, 2) + "× real time" : "";
+    $("cLo").textContent = f(ui.Tin, 0) + " °C"; $("cHi").textContent = f(scaleHi, 0) + " °C";
+    $("rTmax").textContent = f(d.TwMax, 1) + " °C"; $("rTmin").textContent = f(d.TwMin, 1) + " °C";
+    $("rTout").textContent = f(d.ToutMix, 2) + " °C"; $("rTpk").textContent = f(d.ToutPeak, 1) + " °C"; $("rQ").textContent = f(d.Qair, 2) + " W";
+    $("eIn").textContent = f(d.Qin, 2) + " W"; $("eConv").textContent = f(d.Qconv, 2) + " W"; $("eAir").textContent = f(d.Qair, 2) + " W"; $("eSt").textContent = f(st, 2) + " W";
+    $("hBar").textContent = f(d.hbar, 1) + " W/m²·K"; $("hUWT").textContent = f(d.hUWT, 1) + " W/m²·K"; $("hUHF").textContent = f(d.hUHF, 1) + " W/m²·K"; $("nNu").textContent = f(d.NuL, 1);
+    $("sGrid").textContent = s.nx + " × " + s.ny + " cells"; $("sCell").textContent = f(s.dx * 1000, 1) + " × " + f(s.dy * 1000, 3) + " mm";
+    $("sDt").textContent = f(s.dt * 1000, 3) + " ms"; $("sLim").textContent = s.limit === "CFL" ? "air speed" : "diffusion";
+    $("sCfl").textContent = f(s.cfl, 2); $("sDn").textContent = f(s.dnum, 2); $("sDiv").textContent = M.maxDivergence(s).toExponential(1) + " 1/s";
+    $("sRe").textContent = f(d.ReL, 0) + ", " + f(d.Pr, 3);
+    $("capHint").textContent = ui.accel > 1 ? "The plate stores 1/1000 of the heat real aluminum would, so it settles in about " + f(3 * d.tauPlate, 0) + " s. The final temperatures are the same." : "True warm-up. Expect about " + f(3 * d.tauPlate / 60, 0) + " minutes of simulated time to settle.";
+    var ck = [];
+    ck.push(d.ReL < 5e5 ? ["ok", "Re " + f(d.ReL, 0), "Far below 500,000, where a boundary layer on a flat plate turns turbulent. A laminar solution is the right one."] : ["warn", "Re " + f(d.ReL, 0), "Turbulent in reality."]);
+    ck.push(d.Ri < 0.1 ? ["ok", "Ri " + f(d.Ri, 2), "Buoyancy is weak next to the wind, so ignoring it is fair."] : ["warn", "Ri " + f(d.Ri, 2), "Above about 0.1 warm air starts to lift off the plate by itself. This model has no buoyancy, so a real plate would run somewhat cooler than shown. Raise the air speed or lower the heat flux."]);
+    ck.push(["ok", "Bi " + d.Bi.toExponential(1), "The plate conducts heat through its 3 mm thickness thousands of times more easily than the air takes it away, so one temperature through the thickness is accurate."]);
+    if (d.TwMean - ui.Tin > 60) ck.push(["warn", "ΔT " + f(d.TwMean - ui.Tin, 0) + " K", "The air near the plate is much hotter than at the inlet. Its properties are held at the inlet value, which costs a few percent here."]);
+    $("checks").innerHTML = ck.map(function (r) { return '<li><span class="pill ' + r[0] + '">' + r[1] + "</span><span>" + r[2] + "</span></li>"; }).join("");
+    var xs = [], tw = [], hx = [], h1 = [], h2 = [];
+    for (var i = 0; i < s.np; i++) { var x = (i + 0.5) * s.dx; xs.push(x * 1000); tw.push(s.Tw[i]); hx.push(s.qw[i] / Math.max(s.Tw[i] - ui.Tin, 1e-6)); h1.push(M.hLocal(s, x, 0.453)); h2.push(M.hLocal(s, x, 0.332)); }
+    plot("pT", [{ name: "Plate", x: xs, y: tw, color: "#24272B" }], function (v, full) { return f(v, full ? 2 : (Math.abs(v) < 100 && tw[tw.length - 1] - tw[0] < 4 ? 1 : 0)) + (full ? " °C" : ""); }, "tipT");
+    plot("pH", [{ name: "Computed", x: xs, y: hx, color: "#24272B", clip: true }, { name: "Even heat flux", x: xs, y: h1, color: "#5D6269", dash: [6, 4], w: 1.5, clip: true }, { name: "Even wall temperature", x: xs, y: h2, color: "#5D6269", dash: [2, 3], w: 1.5, clip: true }], function (v, full) { return f(v, full ? 1 : 0) + (full ? " W/m²·K" : ""); }, "tipH");
+  }
+
+  /* ---------- controls ---------- */
+  function press(g, b) { g.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); }
+  $("U").addEventListener("input", function (e) { ui.U = s.U = parseFloat(e.target.value); });
+  $("Q").addEventListener("input", function (e) { ui.q = s.q = parseFloat(e.target.value); });
+  $("TI").addEventListener("input", function (e) { ui.Tin = s.Tin = parseFloat(e.target.value); });
+  $("show").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; ui.show = b.dataset.v; press($("show"), b); });
+  $("cap").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; ui.accel = s.accel = +b.dataset.a; press($("cap"), b); });
+  $("pause").addEventListener("click", function (e) { ui.paused = !ui.paused; e.target.textContent = ui.paused ? "Resume" : "Pause"; });
+  $("reset").addEventListener("click", function () { fresh(); });
+  if (reduce.matches) press($("show"), $("show").querySelector('[data-v="vectors"]'));
+
+  /* ---------- main loop: as many solver steps as fit in about 11 ms, then draw ---------- */
+  var last = performance.now(), lastRead = 0;
+  function frame(now) {
+    var dtWall = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!ui.paused && !document.hidden) {
+      var t0 = performance.now(), n = 0, sim0 = s.t;
+      do { M.step(s); n++; } while (performance.now() - t0 < 11 && n < 40);
+      if (!isFinite(s.T[s.i0 + 5]) || !isFinite(s.u[10])) fresh();
+      rateS += s.t - sim0;
+      if (now - rateT > 1000) { simRate = rateS / ((now - rateT) / 1000); rateS = 0; rateT = now; }
+      if (ui.show === "tracers") moveTracers(dtWall);
+    }
+    var tm = ui.Tin + 5; for (var i = 0; i < s.np; i++) if (s.Tw[i] > tm) tm = s.Tw[i];
+    var target = ui.Tin + Math.ceil((tm - ui.Tin) / 5) * 5; scaleHi += (target - scaleHi) * 0.08;
+    draw();
+    if (now - lastRead > 250) { readouts(); lastRead = now; }
+    requestAnimationFrame(frame);
+  }
+  fresh(); layout();
+  for (var w0 = 0; w0 < 60; w0++) moveTracers(0.05);
+  if ("ResizeObserver" in window) new ResizeObserver(function () { layout(); }).observe(cv.parentElement);
+  readouts(); draw();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

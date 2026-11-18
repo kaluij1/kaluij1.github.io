@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Math: 555 Robot Arm</title>
+<meta name="description" content="The 555 servo arm, told from the problem to the answer in formulas and numbers: why the diode is there, why the first model was 9% off, and how R101 was chosen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Playpen+Sans:wght@300;400&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="math.css">
+</head>
+<body>
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="simulations.html">Simulations</a>
+      <a href="servo-arm.html">Simulation</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="math-head">
+    <div class="inner">
+      <p class="eyebrow">The math · 555 robot arm</p>
+      <h1>From a potentiometer to a joint angle, in equations</h1>
+      <p class="lede">The 555 servo arm, told from the problem to the answer in formulas and numbers: why the diode is there, why the first model was 9% off, and how R101 was chosen.</p>
+      <p class="legend-ink"><span class="ink-f">formula</span><span class="ink-n">with the numbers in</span><span class="ink-c">checks and side notes</span></p>
+      <a class="text-link" href="servo-arm.html"><span aria-hidden="true">←</span> Back to the simulation</a>
+    </div>
+  </section>
+  <div class="inner notebook">
+<section class="part"><h2>The problem</h2><div class="step"><h3><span class="n">0</span>Given</h3><div class="math"><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">servo</td><td class="val">pulse 1.0 → 0°,&nbsp; 2.0 ms → 180°</td><td>repeated every ≈ 20 ms</td></tr><tr><td class="sym">V<sub>cc</sub></td><td class="val">6.0 V</td><td>supply</td></tr><tr><td class="sym">C</td><td class="val">47 nF</td><td>timing capacitor C101</td></tr><tr><td class="sym">R<sub>2</sub></td><td class="val">560 kΩ</td><td>discharge resistor R102</td></tr><tr><td class="sym">R<sub>V</sub></td><td class="val">0 – 25 kΩ</td><td>potentiometer RV101</td></tr><tr><td class="sym">D</td><td class="val">1N4148</td><td>I_{s} = 2.52 nA,&nbsp; n = 1.752,&nbsp; R_{s} = 0.568 Ω</td></tr></tbody></table></div></div></div>
+<div class="step"><h3><span class="n">?</span>Find</h3><div class="math"><p class="eq">R<sub>1</sub> so that &nbsp; t<sub>high</sub>(R<sub>V</sub>) ∈ [1, 2] ms,&nbsp;&nbsp; f ≈ 50 Hz,&nbsp; then θ and the arm pose</p></div></div>
+</section>
+<section class="part"><h2>Why a diode</h2><div class="step"><h3><span class="n">1</span>Required duty</h3><div class="math"><p class="eq">D = <span class="fr"><span>t<sub>high</sub></span><span>T</span></span></p><p class="eq num">D = <span class="fr"><span>1 … 2 ms</span><span>20 ms</span></span> = 5 … 10%</p><p class="eq note">plain 555 astable: &nbsp;t<sub>high</sub> = 0.693 (R<sub>1</sub> + R<sub>2</sub>) C &gt; t<sub>low</sub> = 0.693 R<sub>2</sub> C &nbsp;⇒&nbsp; D &gt; 50% ✗</p><p class="eq note">diode across R<sub>2</sub>: charge skips R<sub>2</sub> &nbsp;⇒&nbsp; D &lt; 50% ✓</p></div></div>
+</section>
+<section class="part"><h2>The 555</h2><div class="step"><h3><span class="n">2</span>Thresholds</h3><div class="math"><p class="eq">V<sub>L</sub> = <span class="fr"><span>V<sub>cc</sub></span><span>3</span></span>,&nbsp;&nbsp; V<sub>H</sub> = <span class="fr"><span>2V<sub>cc</sub></span><span>3</span></span></p><p class="eq num">V<sub>L</sub> = 2.00 V,&nbsp;&nbsp; V<sub>H</sub> = 4.00 V</p></div></div>
+<div class="step"><h3><span class="n">3</span>Gap (discharge)</h3><div class="math"><p class="eq">V(t) = V<sub>H</sub> e<sup>−t/R<sub>2</sub>C</sup> &nbsp;⇒&nbsp; t<sub>low</sub> = R<sub>2</sub> C ln 2</p><p class="eq num">t<sub>low</sub> = 560×10<sup>3</sup> × 47×10<sup>−9</sup> × 0.6931 = 18.24 ms</p><p class="eq note">independent of V<sub>cc</sub> and the pot</p></div></div>
+</section>
+<section class="part"><h2>First try: a fixed diode drop</h2><div class="step"><h3><span class="n">4</span>Charge, V<sub>d</sub> = 0.65 V</h3><div class="math"><p class="eq">V(t) = V<sub>∞</sub> − (V<sub>∞</sub> − V<sub>L</sub>) e<sup>−t/RC</sup>,&nbsp;&nbsp; V<sub>∞</sub> = V<sub>cc</sub> − V<sub>d</sub></p><p class="eq">t<sub>high</sub> = R C ln <span class="fr"><span>V<sub>∞</sub> − V<sub>L</sub></span><span>V<sub>∞</sub> − V<sub>H</sub></span></span></p><p class="eq num">R = R<sub>1</sub> + ½R<sub>V</sub> = 22 + 12.5 = 34.5 kΩ</p><p class="eq num">t<sub>high</sub> = 34.5×10<sup>3</sup> × 47×10<sup>−9</sup> × ln <span class="fr"><span>5.35 − 2</span><span>5.35 − 4</span></span> = 1.474 ms</p></div></div>
+<div class="step"><h3><span class="n">5</span>Check against SPICE</h3><div class="math"><p class="eq num">ngspice: &nbsp;t<sub>high</sub> = 1.348 ms</p><p class="eq num">error = <span class="fr"><span>1.474 − 1.348</span><span>1.348</span></span> = +9.3%</p><p class="eq note">5 V … 9 V, pot 0 … 100%: error +4.5% … +13.5% ✗</p></div></div>
+</section>
+<section class="part"><h2>Fix: the diode equation</h2><div class="step"><h3><span class="n">6</span>How much current?</h3><div class="math"><p class="eq">I ≈ <span class="fr"><span>V<sub>cc</sub> − V − V<sub>d</sub></span><span>R</span></span></p><p class="eq num">I ≈ <span class="fr"><span>6 − 2 − 0.5</span><span>34 500</span></span> = 0.10 mA</p></div></div>
+<div class="step"><h3><span class="n">7</span>Shockley</h3><div class="math"><p class="eq">V<sub>d</sub> = n V<sub>T</sub> ln( <span class="fr"><span>I</span><span>I<sub>s</sub></span></span> + 1 ) + I R<sub>s</sub></p><p class="eq num">V<sub>d</sub> = 1.752 × 0.025865 × ln <span class="fr"><span>1.02×10<sup>−4</sup></span><span>2.52×10<sup>−9</sup></span></span> = 0.481 V &nbsp; at V = V<sub>L</sub></p><p class="eq num">V<sub>d</sub> = 0.444 V &nbsp; at V = V<sub>H</sub> &nbsp;(I = 0.045 mA)</p><p class="eq note">0.44 – 0.48 V, not 0.65 V &nbsp;⇒&nbsp; faster charge, shorter pulse</p></div></div>
+<div class="step"><h3><span class="n">8</span>Solve and integrate</h3><div class="math"><p class="eq">I = <span class="fr"><span>V<sub>cc</sub> − V − V<sub>d</sub>(I)</span><span>R</span></span> &nbsp;&nbsp;(Newton, each V)</p><p class="eq">t<sub>high</sub> = ∫<sub>V_{L</sub>}<sup>V<sub>H</sub></sup> <span class="fr"><span>C dV</span><span>I(V)</span></span> &nbsp;&nbsp;(Simpson, 48 panels)</p><p class="eq num">R = 34.5 kΩ: &nbsp;t<sub>high</sub> = 1.3495 ms</p><p class="eq num">ngspice: 1.3484 ms &nbsp;⇒&nbsp; error +0.08% ✓</p></div></div>
+</section>
+<section class="part"><h2>Choose R₁</h2><div class="step"><h3><span class="n">9</span>Bottom of the pot = 1.0 ms</h3><div class="math"><p class="eq">t<sub>high</sub>(R<sub>1</sub>) = 1.000 ms &nbsp;⇒&nbsp; solve for R<sub>1</sub></p><p class="eq num">R<sub>1</sub> = 25.41 kΩ &nbsp;→&nbsp; nearest 1% value: 25.5 kΩ</p></div></div>
+<div class="step"><h3><span class="n">10</span>Full pot range</h3><div class="math"><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">R<sub>V</sub> = 0</td><td class="val">R = 25.5 kΩ</td><td>t_{high} = 1.003 ms &nbsp;(SPICE 1.002)</td></tr><tr><td class="sym">R<sub>V</sub> = 12.5 kΩ</td><td class="val">R = 38.0 kΩ</td><td>t_{high} = 1.484 ms &nbsp;(SPICE 1.480)</td></tr><tr><td class="sym">R<sub>V</sub> = 25 kΩ</td><td class="val">R = 50.5 kΩ</td><td>t_{high} = 1.961 ms &nbsp;(SPICE 1.958)</td></tr></tbody></table></div></div></div>
+</section>
+<section class="part"><h2>Pulse → servo → arm</h2><div class="step"><h3><span class="n">11</span>Frequency</h3><div class="math"><p class="eq">f = <span class="fr"><span>1</span><span>t<sub>high</sub> + t<sub>low</sub></span></span>,&nbsp;&nbsp; D = <span class="fr"><span>t<sub>high</sub></span><span>t<sub>high</sub> + t<sub>low</sub></span></span></p><p class="eq num">f = <span class="fr"><span>1</span><span>1.484 + 18.244 ms</span></span> = 50.7 Hz,&nbsp;&nbsp; D = 7.5%</p></div></div>
+<div class="step"><h3><span class="n">12</span>Angle</h3><div class="math"><p class="eq">θ = 180° × <span class="fr"><span>t<sub>high</sub> − 1 ms</span><span>1 ms</span></span></p><p class="eq num">θ = 180° × <span class="fr"><span>1.484 − 1</span><span>1</span></span> = 87.0°</p><p class="eq num">pot range: &nbsp;0.6° … 172.9°</p></div></div>
+<div class="step"><h3><span class="n">13</span>Servo speed</h3><div class="math"><p class="eq">| <span class="fr"><span>dθ</span><span>dt</span></span> | ≤ 500 °/s</p><p class="eq num">0° → 180°: &nbsp;<span class="fr"><span>180</span><span>500</span></span> = 0.36 s</p></div></div>
+<div class="step"><h3><span class="n">14</span>Forward kinematics</h3><div class="math"><p class="eq">φ = θ<sub>1</sub> − 90°,&nbsp; e<sub>1</sub> = θ<sub>2</sub>,&nbsp; e<sub>2</sub> = θ<sub>2</sub> + θ<sub>3</sub> − 180°</p><p class="eq">r = l<sub>1</sub> cos e<sub>1</sub> + (l<sub>2</sub> + l<sub>3</sub>) cos e<sub>2</sub></p><p class="eq">x = r cos φ,&nbsp; y = r sin φ,&nbsp; z = h<sub>0</sub> + l<sub>1</sub> sin e<sub>1</sub> + (l<sub>2</sub> + l<sub>3</sub>) sin e<sub>2</sub></p><p class="eq num">home: θ = (90°, 100°, 80°),&nbsp; h<sub>0</sub> = 72,&nbsp; l = (105, 100, 58) mm</p><p class="eq num">r = 105 cos 100° + 158 cos 0° = 139.8 mm</p><p class="eq num">z = 72 + 105 sin 100° + 0 = 175.4 mm &nbsp;⇒&nbsp; tip (139.8, 0, 175.4) mm</p></div></div>
+<div class="step"><h3><span class="n">15</span>Gripper</h3><div class="math"><p class="eq">α = <span class="fr"><span>θ<sub>4</sub></span><span>180°</span></span> × 30°,&nbsp;&nbsp; gap = 2 [ 7 + (l<sub>3</sub> − 12) sin α ]</p><p class="eq num">θ<sub>4</sub> = 40° &nbsp;⇒&nbsp; α = 6.7°,&nbsp; gap = 2 (7 + 46 sin 6.7°) = 24.7 mm</p></div></div>
+</section>
+<section class="part"><h2>Does the board match?</h2><div class="step"><h3><span class="n">16</span>Design rule check</h3><div class="math"><p class="eq">gap<sub>ij</sub> = d<sub>ij</sub> − r<sub>i</sub> − r<sub>j</sub> ≥ 0.25 mm &nbsp;&nbsp;∀ copper i, j on different nets</p><p class="eq">∀ net: all pads in one connected island</p><p class="eq num">min gap = 0.70 mm,&nbsp; violations = 0,&nbsp; nets connected = 28 / 28</p></div></div>
+</section>
+<section class="part"><h2>Result</h2><div class="step"><h3><span class="n">✓</span></h3><div class="math"><div class="boxed"><p class="eq">R<sub>1</sub> = 25.5 kΩ,&nbsp; R<sub>V</sub> = 25 kΩ,&nbsp; R<sub>2</sub> = 560 kΩ,&nbsp; C = 47 nF</p><p class="eq">t<sub>high</sub> = 1.00 … 1.96 ms,&nbsp;&nbsp; f = 49.5 … 52.0 Hz,&nbsp;&nbsp; θ = 0.6° … 172.9°</p><p class="eq">model vs ngspice, 20 points: &nbsp;max |error| = 0.23%</p></div></div></div>
+</section>
+
+  </div>
+  <div class="inner endlinks">
+    <a class="text-link" href="servo-arm.html"><span aria-hidden="true">←</span> Back to the simulation</a>
+  </div>
+</main>
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+</body>
+</html>

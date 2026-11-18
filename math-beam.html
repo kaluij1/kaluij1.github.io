@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Math: Cantilever Beam FEM</title>
+<meta name="description" content="The cantilever beam simulator, told from the problem to the answer in formulas and numbers: beam theory, one element, the assembled system, a one-element solution by hand, and the check against the closed form. Default settings: 1 m steel beam, 50 × 20 mm, 500 N.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Playpen+Sans:wght@300;400&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="math.css">
+</head>
+<body>
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="simulations.html">Simulations</a>
+      <a href="beam.html">Simulation</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="math-head">
+    <div class="inner">
+      <p class="eyebrow">The math · Cantilever beam</p>
+      <h1>Bending a beam with finite elements, in equations</h1>
+      <p class="lede">The cantilever beam simulator, told from the problem to the answer in formulas and numbers: beam theory, one element, the assembled system, a one-element solution by hand, and the check against the closed form. Default settings: 1 m steel beam, 50 × 20 mm, 500 N.</p>
+      <p class="legend-ink"><span class="ink-f">formula</span><span class="ink-n">with the numbers in</span><span class="ink-c">checks and side notes</span></p>
+      <a class="text-link" href="beam.html"><span aria-hidden="true">←</span> Back to the simulation</a>
+    </div>
+  </section>
+  <div class="inner notebook">
+<section class="part"><h2>The problem</h2><div class="step"><h3><span class="n">0</span>Given</h3><div class="math"><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">L</td><td class="val">1.0 m</td><td>beam length, fixed at x = 0</td></tr><tr><td class="sym">b × h</td><td class="val">50 × 20 mm</td><td>rectangular section, bending about the 50 mm axis</td></tr><tr><td class="sym">E</td><td class="val">200 GPa</td><td>steel, linear elastic</td></tr><tr><td class="sym">ν</td><td class="val">0.30</td><td>Poisson’s ratio</td></tr><tr><td class="sym">σ<sub>y</sub></td><td class="val">250 MPa</td><td>yield strength</td></tr><tr><td class="sym">F</td><td class="val">500 N</td><td>downward, at x = L</td></tr></tbody></table></div></div></div>
+<div class="step"><h3><span class="n">?</span>Find</h3><div class="math"><p class="eq">v(x),&nbsp; θ(x),&nbsp; M(x),&nbsp; σ(x, y),&nbsp;&nbsp; then v<sub>max</sub>, M<sub>max</sub>, σ<sub>max</sub>, factor of safety</p></div></div>
+</section>
+<section class="part"><h2>The section</h2><div class="step"><h3><span class="n">1</span>Second moment of area</h3><div class="math"><p class="eq">I = <span class="fr"><span>b h<sup>3</sup></span><span>12</span></span></p><p class="eq num">I = <span class="fr"><span>0.050 × 0.020<sup>3</sup></span><span>12</span></span> = 3.333×10<sup>−8</sup> m<sup>4</sup></p></div></div>
+<div class="step"><h3><span class="n">2</span>Bending stiffness</h3><div class="math"><p class="eq num">E I = 200×10<sup>9</sup> × 3.333×10<sup>−8</sup> = 6666.7 N·m<sup>2</sup></p></div></div>
+</section>
+<section class="part"><h2>Beam theory</h2><div class="step"><h3><span class="n">3</span>Euler–Bernoulli</h3><div class="math"><p class="eq">M = E I <span class="fr"><span>d<sup>2</sup>v</span><span>dx<sup>2</sup></span></span>,&nbsp;&nbsp; θ = <span class="fr"><span>dv</span><span>dx</span></span>,&nbsp;&nbsp; <span class="fr"><span>d<sup>2</sup></span><span>dx<sup>2</sup></span></span>( E I <span class="fr"><span>d<sup>2</sup>v</span><span>dx<sup>2</sup></span></span> ) = q(x)</p><p class="eq note">plane sections stay plane and square to the centreline; small slopes</p></div></div>
+<div class="step"><h3><span class="n">4</span>Stress</h3><div class="math"><p class="eq">σ<sub>x</sub> = −<span class="fr"><span>M y</span><span>I</span></span> = −E y <span class="fr"><span>d<sup>2</sup>v</span><span>dx<sup>2</sup></span></span></p><p class="eq note">zero on the neutral axis, largest at y = ± h/2</p></div></div>
+</section>
+<section class="part"><h2>One finite element</h2><div class="step"><h3><span class="n">5</span>Unknowns</h3><div class="math"><p class="eq">d = [ v<sub>1</sub>,&nbsp; θ<sub>1</sub>,&nbsp; v<sub>2</sub>,&nbsp; θ<sub>2</sub> ]<sup>T</sup></p><p class="eq note">two per node: displacement and rotation</p></div></div>
+<div class="step"><h3><span class="n">6</span>Shape functions, ξ = x / l</h3><div class="math"><p class="eq">N<sub>1</sub> = 1 − 3ξ<sup>2</sup> + 2ξ<sup>3</sup>,&nbsp;&nbsp; N<sub>2</sub> = l (ξ − 2ξ<sup>2</sup> + ξ<sup>3</sup>)</p><p class="eq">N<sub>3</sub> = 3ξ<sup>2</sup> − 2ξ<sup>3</sup>,&nbsp;&nbsp; N<sub>4</sub> = l (ξ<sup>3</sup> − ξ<sup>2</sup>)</p><p class="eq">v(ξ) = N<sub>1</sub> v<sub>1</sub> + N<sub>2</sub> θ<sub>1</sub> + N<sub>3</sub> v<sub>2</sub> + N<sub>4</sub> θ<sub>2</sub></p></div></div>
+<div class="step"><h3><span class="n">7</span>Stiffness</h3><div class="math"><p class="eq">k = ∫<sub>0</sub><sup>l</sup> E I &nbsp;N″<sup>T</sup> N″ dx</p><div class="eq">k = <span class="fr"><span>E I</span><span>l<sup>3</sup></span></span><table class="mtx"><tbody><tr><td>12</td><td>6l</td><td>−12</td><td>6l</td></tr><tr><td>6l</td><td>4l<sup>2</sup></td><td>−6l</td><td>2l<sup>2</sup></td></tr><tr><td>−12</td><td>−6l</td><td>12</td><td>−6l</td></tr><tr><td>6l</td><td>2l<sup>2</sup></td><td>−6l</td><td>4l<sup>2</sup></td></tr></tbody></table></div></div></div>
+<div class="step"><h3><span class="n">8</span>With numbers, 10 elements</h3><div class="math"><p class="eq num">l = <span class="fr"><span>L</span><span>10</span></span> = 0.1 m,&nbsp;&nbsp; <span class="fr"><span>E I</span><span>l<sup>3</sup></span></span> = <span class="fr"><span>6666.7</span><span>0.001</span></span> = 6.667×10<sup>6</sup> N/m</p><div class="eq num">k = <table class="mtx"><tbody><tr><td>8.000×10<sup>7</sup></td><td>4.000×10<sup>6</sup></td><td>−8.000×10<sup>7</sup></td><td>4.000×10<sup>6</sup></td></tr><tr><td>4.000×10<sup>6</sup></td><td>2.667×10<sup>5</sup></td><td>−4.000×10<sup>6</sup></td><td>1.333×10<sup>5</sup></td></tr><tr><td>−8.000×10<sup>7</sup></td><td>−4.000×10<sup>6</sup></td><td>8.000×10<sup>7</sup></td><td>−4.000×10<sup>6</sup></td></tr><tr><td>4.000×10<sup>6</sup></td><td>1.333×10<sup>5</sup></td><td>−4.000×10<sup>6</sup></td><td>2.667×10<sup>5</sup></td></tr></tbody></table></div></div></div>
+</section>
+<section class="part"><h2>The whole beam</h2><div class="step"><h3><span class="n">9</span>Assemble</h3><div class="math"><p class="eq">K<sub>(2e+i),(2e+j)</sub> += k<sub>ij</sub>,&nbsp;&nbsp; e = 0 … 9,&nbsp; i, j = 0 … 3</p><p class="eq num">11 nodes × 2 = 22 unknowns,&nbsp; K is 22 × 22</p><p class="eq note">neighbouring elements share a node, so their blocks overlap and add</p></div></div>
+<div class="step"><h3><span class="n">10</span>Load</h3><div class="math"><p class="eq">F = [ 0, 0, … , −500, 0 ]<sup>T</sup></p><p class="eq note">−500 N on the last node’s displacement, nothing on its rotation</p></div></div>
+<div class="step"><h3><span class="n">11</span>Fixed end</h3><div class="math"><p class="eq">v<sub>0</sub> = 0,&nbsp;&nbsp; θ<sub>0</sub> = 0 &nbsp;⇒&nbsp; delete rows and columns 0, 1</p><p class="eq num">20 equations left</p><p class="eq note">without this K is singular: the beam could float or spin freely</p></div></div>
+<div class="step"><h3><span class="n">12</span>Solve</h3><div class="math"><p class="eq">K<sub>ff</sub> u<sub>f</sub> = F<sub>f</sub></p><p class="eq note">Gaussian elimination with partial pivoting</p></div></div>
+</section>
+<section class="part"><h2>The same thing by hand, with one element</h2><div class="step"><h3><span class="n">13</span>2 × 2 system</h3><div class="math"><div class="eq"><span class="fr"><span>E I</span><span>L<sup>3</sup></span></span><table class="mtx"><tbody><tr><td>12</td><td>−6L</td></tr><tr><td>−6L</td><td>4L<sup>2</sup></td></tr></tbody></table><table class="mtx"><tbody><tr><td>v<sub>2</sub></td></tr><tr><td>θ<sub>2</sub></td></tr></tbody></table> = <table class="mtx"><tbody><tr><td>−F</td></tr><tr><td>0</td></tr></tbody></table></div></div></div>
+<div class="step"><h3><span class="n">14</span>Second row</h3><div class="math"><p class="eq">−6L v<sub>2</sub> + 4L<sup>2</sup> θ<sub>2</sub> = 0 &nbsp;⇒&nbsp; θ<sub>2</sub> = <span class="fr"><span>3 v<sub>2</sub></span><span>2L</span></span></p></div></div>
+<div class="step"><h3><span class="n">15</span>First row</h3><div class="math"><p class="eq"><span class="fr"><span>E I</span><span>L<sup>3</sup></span></span> ( 12 v<sub>2</sub> − 9 v<sub>2</sub> ) = −F &nbsp;⇒&nbsp; v<sub>2</sub> = −<span class="fr"><span>F L<sup>3</sup></span><span>3 E I</span></span></p><p class="eq note">one element already gives the textbook formula exactly</p></div></div>
+</section>
+<section class="part"><h2>What the solver returns</h2><div class="step"><h3><span class="n">16</span>Free end</h3><div class="math"><p class="eq num">v = −25.000000 mm,&nbsp;&nbsp; θ = −0.037500 rad = −2.149°</p></div></div>
+<div class="step"><h3><span class="n">17</span>Bending moment</h3><div class="math"><p class="eq">M(ξ) = <span class="fr"><span>E I</span><span>l<sup>2</sup></span></span> [ (−6 + 12ξ) v<sub>1</sub> + l(−4 + 6ξ) θ<sub>1</sub> + (6 − 12ξ) v<sub>2</sub> + l(−2 + 6ξ) θ<sub>2</sub> ]</p><p class="eq num">M(0) = −500.0 N·m,&nbsp;&nbsp; M(0.5 m) = −250.0 N·m,&nbsp;&nbsp; M(L) = 0</p><p class="eq note">check: |M| = F (L − x) ✓</p></div></div>
+<div class="step"><h3><span class="n">18</span>Stress</h3><div class="math"><p class="eq">σ<sub>max</sub> = <span class="fr"><span>|M|<sub>max</sub> (h/2)</span><span>I</span></span></p><p class="eq num">σ<sub>max</sub> = <span class="fr"><span>500 × 0.010</span><span>3.333×10<sup>−8</sup></span></span> = 150.0 MPa</p><p class="eq note">at the wall: tension on top, compression underneath</p></div></div>
+<div class="step"><h3><span class="n">19</span>Factor of safety</h3><div class="math"><p class="eq">n = <span class="fr"><span>σ<sub>y</sub></span><span>σ<sub>max</sub></span></span></p><p class="eq num">n = <span class="fr"><span>250</span><span>150</span></span> = 1.67</p></div></div>
+</section>
+<section class="part"><h2>Validation</h2><div class="step"><h3><span class="n">20</span>Closed form</h3><div class="math"><p class="eq">δ = <span class="fr"><span>F L<sup>3</sup></span><span>3 E I</span></span>,&nbsp;&nbsp; v(x) = −<span class="fr"><span>F x<sup>2</sup> (3L − x)</span><span>6 E I</span></span></p><p class="eq num">δ = <span class="fr"><span>500 × 1.0<sup>3</sup></span><span>3 × 6666.7</span></span> = 25.000000 mm</p></div></div>
+<div class="step"><h3><span class="n">21</span>Error</h3><div class="math"><p class="eq">error = <span class="fr"><span>| δ<sub>FEM</sub> − δ |</span><span>δ</span></span></p><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">1 element</td><td class="val">0</td><td>exact</td></tr><tr><td class="sym">10 elements</td><td class="val">4.6×10<sup>−11</sup> %</td><td>round-off</td></tr><tr><td class="sym">40 elements</td><td class="val">2.6×10<sup>−9</sup> %</td><td>round-off</td></tr></tbody></table></div><p class="eq note">the exact shape is a cubic and the elements are cubic, so only round-off is left</p></div></div>
+<div class="step"><h3><span class="n">22</span>Equilibrium at the wall</h3><div class="math"><p class="eq">R = K u − F &nbsp;(rows 0, 1 of the full matrix)</p><p class="eq num">R<sub>v</sub> = 500.000 N = F ✓&nbsp;&nbsp;&nbsp; R<sub>θ</sub> = 500.000 N·m = F L ✓</p></div></div>
+<div class="step"><h3><span class="n">23</span>Is the theory allowed?</h3><div class="math"><p class="eq">G = <span class="fr"><span>E</span><span>2(1 + ν)</span></span>,&nbsp;&nbsp; δ<sub>shear</sub> = <span class="fr"><span>F L</span><span>κ G A</span></span>,&nbsp; κ = <span class="fr"><span>5</span><span>6</span></span></p><p class="eq num">G = 76.9 GPa,&nbsp;&nbsp; δ<sub>shear</sub> = <span class="fr"><span>500 × 1.0</span><span>0.833 × 76.9×10<sup>9</sup> × 0.001</span></span> = 0.0078 mm</p><p class="eq num">= 0.03% of δ,&nbsp;&nbsp; L/h = 50,&nbsp;&nbsp; δ/L = 2.5%</p><p class="eq note">shear negligible ✓ &nbsp; small displacements ✓ &nbsp; elastic ✓</p></div></div>
+</section>
+<section class="part"><h2>Result</h2><div class="step"><h3><span class="n">✓</span></h3><div class="math"><div class="boxed"><p class="eq">v<sub>max</sub> = 25.0 mm down at x = L,&nbsp;&nbsp; M<sub>max</sub> = 500 N·m at the wall</p><p class="eq">σ<sub>max</sub> = 150 MPa,&nbsp;&nbsp; factor of safety 1.67</p><p class="eq">FEM = formula to 10<sup>−11</sup> %</p></div></div></div>
+</section>
+
+  </div>
+  <div class="inner endlinks">
+    <a class="text-link" href="beam.html"><span aria-hidden="true">←</span> Back to the simulation</a>
+  </div>
+</main>
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+</body>
+</html>

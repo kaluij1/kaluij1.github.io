@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Air Flow Explorer</title>
+<meta name="description" content="A live simulation by John Kaluiji: air flow past a cylinder solved with the Navier-Stokes equations, showing vortex shedding, drag and the Strouhal number, beside the ideal frictionless flow.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Explorer: a wind tunnel window beside its controls, then the numbers the model produces.
+     Pressure colors: orange = above ambient, blue = below, paper = ambient. */
+  :root { --hi: #eb6834; --lo: #2a78d6; --read: 42rem; --good: #1F8A5B; --warn: #9A5B00; }
+  .sim-head { padding-block: clamp(36px, 6vw, 64px) clamp(20px, 3vw, 28px); }
+  .sim-head h1 { margin: 0 0 14px; font-family: var(--font-display); font-weight: 400; font-size: clamp(2.3rem, 5.6vw, 3.6rem); line-height: 1.04; letter-spacing: -.02em; max-width: 16em; }
+  .sim-head .lede { margin: 0; max-width: var(--read); font-size: clamp(1.05rem, 1.9vw, 1.2rem); line-height: 1.5; }
+  .bench { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 18px; margin-top: 8px; }
+  .card-box { border: 1px solid var(--rule); border-radius: 12px; background: var(--card); }
+  .tunnel { position: relative; overflow: hidden; }
+  #tunnel { display: block; width: 100%; height: 100%; min-height: 380px; aspect-ratio: 16 / 10; cursor: crosshair; touch-action: pan-y; }
+  .scene-cap { position: absolute; left: 14px; top: 12px; font-size: .8rem; color: var(--muted); background: rgba(255,255,255,.8); padding: 4px 9px; border-radius: 6px; }
+  .legend { position: absolute; left: 14px; bottom: 12px; font-size: .76rem; color: var(--muted); background: rgba(255,255,255,.86); padding: 6px 9px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+  .legend .bar { width: 190px; height: 8px; border-radius: 4px; margin: 4px 0; background: linear-gradient(90deg, var(--lo), #FAF8F5 75%, var(--hi)); }
+  .legend .ends { display: flex; justify-content: space-between; gap: 12px; }
+  #probe { position: absolute; display: none; pointer-events: none; white-space: nowrap; padding: 7px 10px; font-size: .8rem; line-height: 1.5; font-variant-numeric: tabular-nums; background: var(--card); border: 1px solid var(--rule); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+  #probe b { font-weight: 600; }
+  .panel-side { padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 15px; }
+  .ctl-label { display: block; font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button { font: inherit; font-size: .88rem; font-weight: 500; padding: 7px 13px; border-radius: 99px; cursor: pointer; border: 1px solid var(--rule); background: var(--bg); color: var(--muted); transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
+  .seg button:hover { color: var(--fg); border-color: #CFC9C0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .seg button:focus-visible, input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; align-items: baseline; gap: 10px; }
+  .row label { font-size: .92rem; }
+  .row output { margin-left: auto; font-variant-numeric: tabular-nums; font-size: .92rem; font-weight: 500; white-space: nowrap; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+  .ctl[hidden] { display: none; }
+  .scn-note { margin: 0; font-size: .9rem; color: var(--muted); line-height: 1.5; }
+
+  .numbers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+  .num-card { padding: 16px 18px; }
+  .num-card h2 { margin: 0 0 10px; font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-family: var(--font-body); }
+  .num-card dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px 14px; font-size: .92rem; }
+  .num-card dt { color: var(--muted); }
+  .num-card dd { margin: 0; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .checks { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .checks li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: baseline; font-size: .95rem; max-width: 60rem; }
+  .pill { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 2px 9px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+  .pill.ok { color: var(--good); } .pill.warn { color: var(--warn); } .pill.note { color: var(--muted); }
+  .prose { max-width: var(--read); }
+  .prose h2 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 400; font-size: clamp(1.5rem, 2.6vw, 1.9rem); line-height: 1.2; }
+  .prose p { margin: 0 0 14px; }
+  .prose a { color: var(--accent); }
+  .modebar { margin: 0 0 18px; }
+  .modebar .scn-note { margin-top: 8px; max-width: 46rem; }
+  .wake { padding: 12px 14px; }
+  #wake { display: block; width: 100%; border-radius: 6px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 10px; font-size: .8rem; color: var(--muted); }
+  .chip { padding: 3px 9px; border: 1px solid var(--rule); border-radius: 99px; background: var(--bg); font-variant-numeric: tabular-nums; }
+  .chip.state { color: var(--warn); border-color: currentColor; font-weight: 600; }
+  .chip.state.ok { color: var(--good); }
+  .cbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-top: 10px; font-size: .8rem; color: var(--muted); }
+  .cbar .bar { height: 10px; border-radius: 5px; border: 1px solid var(--rule); }
+  .wcontrols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 26px; padding: 18px; margin-top: 18px; }
+  .hint { margin: 6px 0 0; font-size: .8rem; color: var(--muted); line-height: 1.45; }
+  .num-card dd.big { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.1; }
+  .num-card dt.big { align-self: end; }
+  .wplot { padding: 16px 18px 12px; margin-top: 18px; }
+  .wplot h2 { margin: 0 0 2px; font-size: .95rem; font-weight: 600; font-family: var(--font-body); }
+  .wplot p { margin: 0 0 8px; font-size: .82rem; color: var(--muted); }
+  #wChart { display: block; width: 100%; height: 220px; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 6px 0 0; padding: 0; list-style: none; font-size: .8rem; color: var(--muted); }
+  .key i { display: inline-block; width: 18px; height: 0; border-top: 2.5px solid; vertical-align: middle; margin-right: 6px; }
+  #idealWrap[hidden], #viscWrap[hidden] { display: none; }
+  @media (max-width: 900px) { .wcontrols { grid-template-columns: 1fr; } }
+  section.pad { padding-block: clamp(36px, 5vw, 60px); }
+  @media (max-width: 900px) { .bench, .numbers { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="simulations.html">Simulations</a>
+      <a href="math-airflow.html">The math</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="sim-head">
+    <div class="inner">
+      <p class="eyebrow">Live simulation · Fluids</p>
+      <h1>How air moves around a cylinder</h1>
+      <p class="lede">Real air is slightly sticky, and that changes everything behind a body. This page solves the Navier-Stokes equations in your browser and shows vortices peeling off a cylinder one after another. Switch friction off to see the ideal flow that textbooks start with, and what it misses.</p>
+      <a class="text-link" href="math-airflow.html" style="margin-top:18px">The math behind it <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+  <section aria-label="Simulator">
+    <div class="inner">
+      <div class="modebar">
+        <span class="ctl-label" id="lblMode">Model</span>
+        <div class="seg" role="group" aria-labelledby="lblMode" id="mode">
+          <button type="button" data-m="visc" aria-pressed="true">Real air, with friction</button>
+          <button type="button" data-m="ideal" aria-pressed="false">Ideal flow, no friction</button>
+        </div>
+        <p class="scn-note" id="modeNote"></p>
+      </div>
+
+      <div id="viscWrap">
+        <div class="card-box wake">
+          <div class="chips">
+            <span class="chip state" id="wState">Starting up</span>
+            <span class="chip" id="wTime"></span>
+            <span class="chip" id="wSpeed"></span>
+          </div>
+          <canvas id="wake" role="img" aria-label="Air flowing left to right past a cylinder, coloured by how fast the air spins. Behind the cylinder, vortices peel off alternately from the top and bottom."></canvas>
+          <div class="cbar"><span id="wLo"></span><div class="bar" id="wBar"></div><span id="wHi"></span></div>
+        </div>
+
+        <div class="card-box wcontrols">
+          <div>
+            <div class="row"><label for="RE">Reynolds number</label><output id="oRE" for="RE"></output></div>
+            <input type="range" id="RE" min="20" max="200" step="5" value="100">
+            <p class="hint">Speed × diameter ÷ viscosity. It alone decides the pattern.</p>
+          </div>
+          <div>
+            <div class="row"><label for="DM">Cylinder diameter</label><output id="oDM" for="DM"></output></div>
+            <input type="range" id="DM" min="1" max="20" step="0.5" value="3">
+            <p class="hint" id="dmHint"></p>
+          </div>
+          <div>
+            <span class="ctl-label" id="lblWshow">Colour by</span>
+            <div class="seg" role="group" aria-labelledby="lblWshow" id="wshow">
+              <button type="button" data-v="vort" aria-pressed="true">Spin (vorticity)</button>
+              <button type="button" data-v="speed" aria-pressed="false">Speed</button>
+            </div>
+          </div>
+          <div>
+            <span class="ctl-label" id="lblSmoke">Smoke lines</span>
+            <div class="seg" role="group" aria-labelledby="lblSmoke" id="wsmoke">
+              <button type="button" data-v="1" aria-pressed="true">On</button>
+              <button type="button" data-v="0" aria-pressed="false">Off</button>
+            </div>
+          </div>
+          <div>
+            <span class="ctl-label">Run</span>
+            <div class="seg">
+              <button type="button" id="wPause">Pause</button>
+              <button type="button" id="wReset">Restart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="numbers">
+          <div class="card-box num-card">
+            <h2>Results, last few cycles</h2>
+            <dl>
+              <dt class="big">Strouhal number</dt><dd class="big" id="wSt"></dd>
+              <dt>Experiments (Williamson)</dt><dd id="wStRef"></dd>
+              <dt class="big">Drag coefficient</dt><dd class="big" id="wCd"></dd>
+              <dt class="big">Side force swing</dt><dd class="big" id="wCl"></dd>
+              <dt>Ideal flow predicts</dt><dd>no drag, no swing</dd>
+            </dl>
+          </div>
+          <div class="card-box num-card">
+            <h2>In real units, sea-level air at 15 °C</h2>
+            <dl>
+              <dt>Wind speed for this Reynolds number</dt><dd id="pU"></dd>
+              <dt>Vortices shed per second, each side</dt><dd id="pF"></dd>
+              <dt>Drag per metre of cylinder</dt><dd id="pD"></dd>
+              <dt>Side force swing per metre</dt><dd id="pL"></dd>
+            </dl>
+          </div>
+          <div class="card-box num-card">
+            <h2>Solver, this instant</h2>
+            <dl>
+              <dt>Grid</dt><dd id="wGrid"></dd>
+              <dt>Cells across the cylinder</dt><dd id="wN"></dd>
+              <dt>Time step</dt><dd id="wDt"></dd>
+              <dt>Limited by</dt><dd id="wLim"></dd>
+              <dt>Courant number, max 0.4</dt><dd id="wCfl"></dd>
+              <dt>Diffusion number, max 0.4</dt><dd id="wDn"></dd>
+              <dt>Largest ∇·V left over</dt><dd id="wDiv"></dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="card-box wplot">
+          <h2>Forces on the cylinder over time</h2>
+          <p>Force coefficients against time, in units of diameter ÷ wind speed</p>
+          <canvas id="wChart" role="img" aria-label="Line chart of drag coefficient and lift coefficient against time. Once shedding starts the lift swings evenly about zero and the drag ripples at twice that rate."></canvas>
+          <ul class="key"><li><i style="border-color:#eb6834"></i>Drag coefficient</li><li><i style="border-color:#2a78d6"></i>Side force (lift) coefficient</li></ul>
+        </div>
+
+        <ul class="checks" id="wChecks"></ul>
+      </div>
+
+      <div id="idealWrap" hidden>
+      <div class="bench">
+        <div class="card-box tunnel" id="tunnelBox">
+          <canvas id="tunnel" role="img" aria-label="Streaks of air flowing left to right around the chosen body, over a map of pressure"></canvas>
+          <span class="scene-cap" id="cap">Wind blows left to right. Shown in slow motion.</span>
+          <div class="legend" id="legend">
+            <div>Pressure compared with the surrounding air</div>
+            <div class="bar"></div>
+            <div class="ends"><span id="legLo"></span><span>0</span><span id="legHi"></span></div>
+          </div>
+          <div id="probe"></div>
+        </div>
+
+        <div class="card-box panel-side">
+          <div>
+            <span class="ctl-label" id="lblScn">Scenario</span>
+            <div class="seg" role="group" aria-labelledby="lblScn" id="scn">
+              <button type="button" data-s="cyl" aria-pressed="true">Cylinder</button>
+              <button type="button" data-s="spin" aria-pressed="false">Spinning cylinder</button>
+              <button type="button" data-s="half" aria-pressed="false">Half body</button>
+              <button type="button" data-s="oval" aria-pressed="false">Oval</button>
+            </div>
+          </div>
+          <p class="scn-note" id="scnNote"></p>
+          <div class="ctl">
+            <div class="row"><label for="U">Wind speed</label><output id="oU" for="U"></output></div>
+            <input type="range" id="U" min="1" max="60" step="1" value="10">
+          </div>
+          <div class="ctl">
+            <div class="row"><label for="A" id="lblA">Cylinder radius</label><output id="oA" for="A"></output></div>
+            <input type="range" id="A" min="0.05" max="0.30" step="0.01" value="0.15">
+          </div>
+          <div class="ctl" id="ctlSpin" hidden>
+            <div class="row"><label for="SP">Spin (surface speed ÷ wind speed)</label><output id="oSP" for="SP"></output></div>
+            <input type="range" id="SP" min="-3" max="3" step="0.1" value="1.5">
+          </div>
+          <div class="ctl" id="ctlFat" hidden>
+            <div class="row"><label for="FT">Source strength</label><output id="oFT" for="FT"></output></div>
+            <input type="range" id="FT" min="0.3" max="3" step="0.1" value="1">
+          </div>
+          <div>
+            <span class="ctl-label" id="lblAir">The air</span>
+            <div class="seg" role="group" aria-labelledby="lblAir" id="air">
+              <button type="button" data-t="15" data-p="101.3" aria-pressed="true">Sea level, 15 °C</button>
+              <button type="button" data-t="-20" data-p="101.3" aria-pressed="false">Cold day, −20 °C</button>
+              <button type="button" data-t="35" data-p="101.3" aria-pressed="false">Hot day, 35 °C</button>
+              <button type="button" data-t="5" data-p="83" aria-pressed="false">Mile high</button>
+            </div>
+          </div>
+          <div class="ctl">
+            <div class="row"><label for="T">Temperature</label><output id="oT" for="T"></output></div>
+            <input type="range" id="T" min="-40" max="50" step="1" value="15">
+          </div>
+          <div class="ctl">
+            <div class="row"><label for="P">Air pressure</label><output id="oP" for="P"></output></div>
+            <input type="range" id="P" min="50" max="105" step="0.1" value="101.3">
+          </div>
+          <div>
+            <span class="ctl-label" id="lblView">Show</span>
+            <div class="seg" role="group" aria-labelledby="lblView" id="view">
+              <button type="button" data-v="both" aria-pressed="true">Flow and pressure</button>
+              <button type="button" data-v="flow" aria-pressed="false">Flow only</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="numbers">
+        <div class="card-box num-card">
+          <h2>The air</h2>
+          <dl>
+            <dt>Density</dt><dd id="nRho"></dd>
+            <dt>Volume of 1 kg of air</dt><dd id="nVol"></dd>
+            <dt>Speed of sound</dt><dd id="nC"></dd>
+            <dt>Viscosity</dt><dd id="nMu"></dd>
+          </dl>
+        </div>
+        <div class="card-box num-card">
+          <h2>The flow</h2>
+          <dl>
+            <dt>Fastest air, at the body</dt><dd id="nVmax"></dd>
+            <dt>Lowest pressure, at the body</dt><dd id="nPmin"></dd>
+            <dt>Pressure rise where air stops</dt><dd id="nQ"></dd>
+            <dt>Mach number</dt><dd id="nM"></dd>
+            <dt>Reynolds number</dt><dd id="nRe"></dd>
+          </dl>
+        </div>
+        <div class="card-box num-card">
+          <h2>Forces, per metre of span</h2>
+          <dl>
+            <dt>Lift</dt><dd id="nL"></dd>
+            <dt>Drag</dt><dd>0 N</dd>
+            <dt id="nXl">Body width</dt><dd id="nX"></dd>
+          </dl>
+        </div>
+      </div>
+
+      <ul class="checks" id="checks"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="pad">
+    <div class="inner prose">
+      <h2>What friction adds</h2>
+      <p>Without friction, air slips past the cylinder and closes up behind it, front and back mirror each other, and the pressures cancel. The predicted drag is exactly zero, which no one has ever measured. With friction, a thin layer of air sticks to the surface, cannot follow the curve round the back, and breaks away. The two breakaway layers roll up into vortices that leave alternately from the top and the bottom.</p>
+      <p>That one change produces a wake, real drag, and a side force that swings back and forth at a steady rate. It is why wires hum in the wind and why chimneys and bridge cables can shake. The rate follows one number: frequency × diameter ÷ wind speed, the Strouhal number, which stays near 0.2 over a huge range of sizes and speeds.</p>
+      <h2 style="margin-top:28px">How far to trust it</h2>
+      <p>The shedding frequency lands within about 5% of wind-tunnel measurements from Reynolds 60 to 200. The drag coefficient reads about 10 to 15% above published values, mostly because the cylinder is only 10 grid cells across so that the solver can run live. Below about Reynolds 47 the wake correctly stays steady. Colours are blended between grid cells, and the smoke lines are drawn by carrying markers along the computed velocity.</p>
+      <p>In the ideal-flow mode, temperature and pressure change the forces but never the streamlines, and drag is always zero. Every step for both models is worked out on <a href="math-airflow.html">the math page</a>.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var R_AIR = 287.05, GAMMA = 1.4, TWO_PI = 2 * Math.PI;
+  var VIEW_H = 1.5;                       // metres of tunnel shown top to bottom
+  var st = { scn: "cyl", U: 10, a: 0.15, spin: 1.5, fat: 1, T: 15, p: 101.3, view: "both" };
+  var NOTES = {
+    cyl: "A steady wind plus a doublet. The air splits at the front, speeds up over the top and bottom, and rejoins behind.",
+    spin: "Add a vortex and the cylinder acts as if it spins. Air on one side speeds up, pressure there drops, and the cylinder is pushed sideways. This is the Magnus effect.",
+    half: "A steady wind plus a single source. The source pushes the wind aside and the dividing streamline traces a rounded nose that never closes.",
+    oval: "A source in front and an equal sink behind. Everything the source emits is swallowed again, so the body closes into an oval."
+  };
+  var $ = function (id) { return document.getElementById(id); };
+  var cv = $("tunnel"), ctx = cv.getContext("2d"), box = $("tunnelBox");
+  var W = 0, H = 0, dpr = 1, S = 1, cx = 0, cy = 0;         // S: px per metre
+  var P = [], outline = [], pmap = null, air = {}, flow = {};
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  /* ---------- the air: ideal gas, speed of sound, Sutherland viscosity ---------- */
+  function airProps() {
+    var Tk = st.T + 273.15, p = st.p * 1000;
+    var rho = p / (R_AIR * Tk);
+    var c = Math.sqrt(GAMMA * R_AIR * Tk);
+    var mu = 1.716e-5 * Math.pow(Tk / 273.15, 1.5) * (273.15 + 110.4) / (Tk + 110.4);
+    return { Tk: Tk, p: p, rho: rho, c: c, mu: mu };
+  }
+
+  /* ---------- the flow: velocity (m/s) at a point (m), body at the origin, y up ---------- */
+  function params() {
+    var U = st.U, a = st.a;
+    flow = { U: U, a: a, G: 0, m: 0, b: a };
+    if (st.scn === "spin") flow.G = TWO_PI * a * U * st.spin;      // circulation, clockwise positive
+    if (st.scn === "half") flow.m = 2 * U * a;                     // far downstream half width = a
+    if (st.scn === "oval") flow.m = Math.PI * U * a * st.fat;
+  }
+  function vel(x, y, o) {
+    var U = flow.U, r2, k;
+    if (st.scn === "cyl" || st.scn === "spin") {
+      var a2 = flow.a * flow.a;
+      r2 = Math.max(x * x + y * y, a2 * 0.98);
+      k = a2 / (r2 * r2);
+      o.u = U * (1 - k * (x * x - y * y)) + flow.G * y / (TWO_PI * r2);
+      o.v = -U * k * 2 * x * y - flow.G * x / (TWO_PI * r2);
+    } else if (st.scn === "half") {
+      r2 = Math.max(x * x + y * y, 1e-6);
+      k = flow.m / (TWO_PI * r2);
+      o.u = U + k * x; o.v = k * y;
+    } else {
+      var b = flow.b, x1 = x + b, x2 = x - b;
+      var r1 = Math.max(x1 * x1 + y * y, 1e-6), q2 = Math.max(x2 * x2 + y * y, 1e-6);
+      k = flow.m / TWO_PI;
+      o.u = U + k * (x1 / r1 - x2 / q2); o.v = k * (y / r1 - y / q2);
+    }
+    return o;
+  }
+  function psiOval(x, y) { return flow.U * y + flow.m / TWO_PI * (Math.atan2(y, x + flow.b) - Math.atan2(y, x - flow.b)); }
+  function inside(x, y) {
+    if (st.scn === "cyl" || st.scn === "spin") return x * x + y * y < flow.a * flow.a;
+    if (st.scn === "half") return Math.abs(flow.U * y + flow.m * Math.atan2(y, x) / TWO_PI) < flow.m / 2;
+    if (Math.abs(y) < 1e-9) return Math.abs(x) < Math.sqrt(flow.b * flow.b + flow.m * flow.b / (Math.PI * flow.U));
+    return y * psiOval(x, y) < 0;
+  }
+
+  /* ---------- the body outline (upper half, then mirrored) ---------- */
+  function buildOutline() {
+    var up = [], i, n = 120;
+    if (st.scn === "cyl" || st.scn === "spin") {
+      for (i = 0; i <= n; i++) { var t = Math.PI * (1 - i / n); up.push([flow.a * Math.cos(t), flow.a * Math.sin(t)]); }
+    } else if (st.scn === "half") {
+      var xmax = (W - cx) / S + 0.2;
+      for (i = 0; i <= n * 2; i++) {
+        var th = Math.PI - (Math.PI - 0.02) * i / (n * 2);
+        var r = th >= Math.PI - 1e-9 ? flow.m / (TWO_PI * flow.U) : flow.m * (Math.PI - th) / (TWO_PI * flow.U * Math.sin(th));
+        var x = r * Math.cos(th), y = r * Math.sin(th);
+        up.push([x, y]);
+        if (x > xmax) break;
+      }
+    } else {
+      var xs = Math.sqrt(flow.b * flow.b + flow.m * flow.b / (Math.PI * flow.U));
+      for (i = 0; i <= n; i++) {
+        var xx = -xs * Math.cos(Math.PI * i / n), lo = 0, hi = 4 * (flow.b + flow.a) * (1 + st.fat);
+        if (i === 0 || i === n) { up.push([xx, 0]); continue; }
+        for (var k = 0; k < 40; k++) { var mid = (lo + hi) / 2; if (psiOval(xx, mid) < 0) lo = mid; else hi = mid; }
+        up.push([xx, (lo + hi) / 2]);
+      }
+    }
+    outline = up;
+  }
+  function surfaceStats() {
+    var o = {}, vmax = 0, hmax = 0;
+    for (var i = 0; i < outline.length; i++) {
+      var x = outline[i][0] * 1.0005, y = outline[i][1] * 1.0005;
+      for (var s = -1; s <= 1; s += 2) { vel(x, s * y, o); var v = Math.sqrt(o.u * o.u + o.v * o.v); if (v > vmax) vmax = v; }
+      if (outline[i][1] > hmax) hmax = outline[i][1];
+    }
+    if (st.scn === "half") hmax = flow.a;
+    return { vmax: vmax, width: 2 * hmax };
+  }
+
+  /* ---------- drawing helpers ---------- */
+  function sx(x) { return cx + x * S; }
+  function sy(y) { return cy - y * S; }
+  function bodyPath() {
+    ctx.beginPath();
+    var i;
+    for (i = 0; i < outline.length; i++) { if (i) ctx.lineTo(sx(outline[i][0]), sy(outline[i][1])); else ctx.moveTo(sx(outline[i][0]), sy(outline[i][1])); }
+    for (i = outline.length - 1; i >= 0; i--) ctx.lineTo(sx(outline[i][0]), sy(-outline[i][1]));
+    ctx.closePath();
+  }
+  function mix(a, b, t) { return Math.round(a + (b - a) * t); }
+  function buildPressureMap() {
+    var cell = 4, nx = Math.ceil(W / cell), ny = Math.ceil(H / cell);
+    var off = document.createElement("canvas"); off.width = nx; off.height = ny;
+    var g = off.getContext("2d"), img = g.createImageData(nx, ny), d = img.data, o = {}, U2 = flow.U * flow.U;
+    var bg = [250, 248, 245], hi = [235, 104, 52], lo = [42, 120, 214];
+    for (var j = 0; j < ny; j++) for (var i = 0; i < nx; i++) {
+      var x = ((i + 0.5) * cell - cx) / S, y = (cy - (j + 0.5) * cell) / S, q = (j * nx + i) * 4;
+      vel(x, y, o);
+      var cp = 1 - (o.u * o.u + o.v * o.v) / U2, c = cp >= 0 ? hi : lo, t = cp >= 0 ? Math.min(1, cp) : Math.min(1, -cp / 3);
+      t = Math.pow(t, 0.8) * 0.85;
+      d[q] = mix(bg[0], c[0], t); d[q + 1] = mix(bg[1], c[1], t); d[q + 2] = mix(bg[2], c[2], t); d[q + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    pmap = off;
+  }
+
+  /* ---------- tracers ---------- */
+  function spawn(p, anywhere) {
+    for (var k = 0; k < 8; k++) {
+      p.x = anywhere ? (Math.random() * W - cx) / S : (-6 - cx) / S;
+      p.y = (cy - Math.random() * H) / S;
+      if (!inside(p.x, p.y)) break;
+    }
+    p.age = 0; p.life = 5 + Math.random() * 8; p.n = 0; p.sp = flow.U;
+  }
+  function buildTracers() {
+    var n = Math.min(900, Math.round(W * H / 1300));
+    P = [];
+    for (var i = 0; i < n; i++) { var p = { tx: new Float32Array(14), ty: new Float32Array(14) }; spawn(p, true); p.age = Math.random() * p.life; P.push(p); }
+  }
+  var o1 = {}, clock = 0;
+  function step(dt) {
+    // slow motion: the free stream always crosses the window at a watchable pace
+    var ts = (34 + 2 * flow.U) / (flow.U * S), h = dt * ts;
+    clock += dt; var rec = clock >= 0.035; if (rec) clock = 0;
+    for (var i = 0; i < P.length; i++) {
+      var p = P[i]; p.age += dt;
+      if (p.age > p.life) { spawn(p, true); continue; }
+      vel(p.x, p.y, o1);
+      var mx = p.x + o1.u * h / 2, my = p.y + o1.v * h / 2;
+      vel(mx, my, o1);
+      p.x += o1.u * h; p.y += o1.v * h; p.sp = Math.sqrt(o1.u * o1.u + o1.v * o1.v);
+      var px = sx(p.x), py = sy(p.y);
+      if (px > W + 10 || px < -30 || py < -30 || py > H + 30 || inside(p.x, p.y)) { spawn(p, px <= W + 10 && !inside(p.x, p.y)); continue; }
+      if (rec) {
+        if (p.n < 14) { p.tx[p.n] = px; p.ty[p.n] = py; p.n++; }
+        else { p.tx.copyWithin(0, 1); p.ty.copyWithin(0, 1); p.tx[13] = px; p.ty[13] = py; }
+      }
+    }
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    if (st.view === "both" && pmap) { ctx.imageSmoothingEnabled = true; ctx.drawImage(pmap, 0, 0, W, H); }
+    ctx.lineWidth = 1.15; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    var NB = 4, b, i;
+    for (i = 0; i < P.length; i++) {
+      var p = P[i], fade = Math.min(1, p.age / 0.6, (p.life - p.age) / 0.6);
+      p.b = Math.max(0, Math.min(NB - 1, Math.round(fade * (0.5 + 0.5 * Math.min(1, p.sp / (2 * flow.U))) * NB - 0.5)));
+    }
+    for (b = 0; b < NB; b++) {
+      ctx.beginPath();
+      for (i = 0; i < P.length; i++) {
+        var q = P[i]; if (q.b !== b || q.n < 2) continue;
+        ctx.moveTo(q.tx[0], q.ty[0]);
+        for (var j = 1; j < q.n; j++) ctx.lineTo(q.tx[j], q.ty[j]);
+        ctx.lineTo(sx(q.x), sy(q.y));
+      }
+      ctx.strokeStyle = "rgba(36,39,43," + (0.62 * (b + 1) / NB).toFixed(3) + ")";
+      ctx.stroke();
+    }
+    bodyPath(); ctx.fillStyle = "#FFFFFF"; ctx.fill(); ctx.strokeStyle = "#24272B"; ctx.lineWidth = 1.4; ctx.stroke();
+    if (st.scn === "spin" && Math.abs(st.spin) > 0.05) {
+      // spin direction and lift arrow
+      var a = flow.a * S, dir = st.spin > 0 ? 1 : -1, len = Math.min(H * 0.3, 14 + 22 * Math.abs(st.spin));
+      ctx.strokeStyle = "#46607F"; ctx.fillStyle = "#46607F"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, a * 0.55, -2.4, -0.7, dir < 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy - dir * (a + 6)); ctx.lineTo(cx, cy - dir * (a + 6 + len)); ctx.stroke();
+      var ty = cy - dir * (a + 6 + len);
+      ctx.beginPath(); ctx.moveTo(cx, ty - dir * 8); ctx.lineTo(cx - 5, ty); ctx.lineTo(cx + 5, ty); ctx.closePath(); ctx.fill();
+      ctx.font = "600 12px 'Albert Sans', sans-serif"; ctx.fillText("Lift", cx + 9, ty + (dir > 0 ? 4 : 2));
+    }
+  }
+  function drawStill() {            // streamlines, for reduced motion
+    ctx.clearRect(0, 0, W, H);
+    if (st.view === "both" && pmap) ctx.drawImage(pmap, 0, 0, W, H);
+    ctx.strokeStyle = "rgba(36,39,43,.5)"; ctx.lineWidth = 1.1; ctx.beginPath();
+    var o = {};
+    for (var y0 = 11; y0 < H; y0 += 22) {
+      var x = (0 - cx) / S, y = (cy - y0) / S, g = 0; ctx.moveTo(sx(x), sy(y));
+      while (sx(x) < W && g++ < 3000) { vel(x, y, o); var s = Math.sqrt(o.u * o.u + o.v * o.v) || 1; x += o.u / s * 4 / S; y += o.v / s * 4 / S; if (inside(x, y)) break; ctx.lineTo(sx(x), sy(y)); }
+    }
+    ctx.stroke();
+    bodyPath(); ctx.fillStyle = "#FFFFFF"; ctx.fill(); ctx.strokeStyle = "#24272B"; ctx.lineWidth = 1.4; ctx.stroke();
+  }
+
+  /* ---------- numbers ---------- */
+  function fmt(x, d) { return x.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d }); }
+  function sci(x) { var e = Math.floor(Math.log10(x)); return fmt(x / Math.pow(10, e), 1) + " × 10" + String(e).replace(/-/g, "⁻").replace(/\d/g, function (c) { return "⁰¹²³⁴⁵⁶⁷⁸⁹"[c]; }); }
+  function pa(x) { return Math.abs(x) >= 1000 ? fmt(x / 1000, 2) + " kPa" : fmt(x, Math.abs(x) < 10 ? 1 : 0) + " Pa"; }
+  function readouts() {
+    air = airProps();
+    var q = 0.5 * air.rho * st.U * st.U, ss = surfaceStats();
+    var M = st.U / air.c, Re = air.rho * st.U * ss.width / air.mu;
+    var cpMin = 1 - ss.vmax * ss.vmax / (st.U * st.U);
+    $("oU").textContent = st.U + " m/s (" + Math.round(st.U * 2.237) + " mph)";
+    $("oA").textContent = Math.round(st.a * 100) + " cm";
+    $("oSP").textContent = fmt(st.spin, 1) + " (" + fmt(Math.abs(st.spin) * st.U / st.a * 60 / TWO_PI, 0) + " rpm)";
+    $("oFT").textContent = fmt(st.fat, 1) + "×";
+    $("oT").textContent = st.T + " °C (" + Math.round(st.T * 9 / 5 + 32) + " °F)";
+    $("oP").textContent = fmt(st.p, 1) + " kPa";
+    $("nRho").textContent = fmt(air.rho, 3) + " kg/m³";
+    $("nVol").textContent = fmt(1 / air.rho, 3) + " m³";
+    $("nC").textContent = fmt(air.c, 0) + " m/s";
+    $("nMu").textContent = sci(air.mu) + " Pa·s";
+    $("nVmax").textContent = fmt(ss.vmax, 1) + " m/s (" + fmt(ss.vmax / st.U, 2) + "× wind)";
+    $("nPmin").textContent = pa(-cpMin * q) + " below";
+    $("nQ").textContent = pa(q);
+    $("nM").textContent = fmt(M, 3);
+    $("nRe").textContent = sci(Re);
+    var L = air.rho * st.U * flow.G;
+    $("nL").textContent = st.scn === "spin" ? fmt(Math.abs(L), Math.abs(L) < 10 ? 1 : 0) + " N " + (L > 0 ? "up" : L < 0 ? "down" : "") : "0 N";
+    $("nXl").textContent = st.scn === "half" ? "Body width, far downstream" : "Body width";
+    $("nX").textContent = fmt(ss.width * 100, 1) + " cm";
+    $("legLo").textContent = "−" + pa(3 * q); $("legHi").textContent = "+" + pa(q);
+    $("legend").style.display = st.view === "both" ? "" : "none";
+    var c = [];
+    c.push(M < 0.3 ? ["ok", "Mach " + fmt(M, 2), "Well under Mach 0.3, so treating air as incompressible is a good approximation."]
+                   : ["warn", "Mach " + fmt(M, 2), "Above Mach 0.3 air starts to squeeze as it speeds up. This model ignores that, so its pressures drift from reality."]);
+    if (ss.vmax / air.c >= 0.3 && M < 0.3) c.push(["warn", "Local Mach " + fmt(ss.vmax / air.c, 2), "The wind is slow enough, but the fastest air at the body is not."]);
+    c.push(["note", "Re " + sci(Re), Re > 50 ? "At this Reynolds number real air separates from the body and leaves a wake. Ideal flow has no friction, so it shows none and predicts zero drag." : "At this Reynolds number friction dominates and real air would creep around the body."]);
+    if (st.scn === "spin" && Math.abs(st.spin) > 2) c.push(["note", "Spin above 2", "The two points where air stops have merged and left the surface. A ring of air now circles with the cylinder."]);
+    $("checks").innerHTML = c.map(function (r) { return '<li><span class="pill ' + r[0] + '">' + r[1] + "</span><span>" + r[2] + "</span></li>"; }).join("");
+    return q;
+  }
+
+  /* ---------- wiring ---------- */
+  function layout() {
+    var r = cv.getBoundingClientRect(); W = r.width; H = r.height;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    S = Math.min(H / VIEW_H, W / 2.1); cx = W * (st.scn === "half" ? 0.34 : 0.44); cy = H / 2;
+  }
+  function rebuild(keepTracers) {
+    if ($("idealWrap").hidden || cv.getBoundingClientRect().width < 10) return;
+    layout(); params(); buildOutline(); buildPressureMap(); readouts();
+    $("scnNote").textContent = NOTES[st.scn];
+    $("ctlSpin").hidden = st.scn !== "spin"; $("ctlFat").hidden = st.scn !== "oval";
+    $("lblA").textContent = st.scn === "half" ? "Body half width" : st.scn === "oval" ? "Source to centre distance" : "Cylinder radius";
+    if (!keepTracers || !P.length) { buildTracers(); for (var i = 0; i < 70; i++) step(1 / 30); }
+    if (reduce.matches) drawStill();
+  }
+  function press(group, btn) { group.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", String(b === btn)); }); }
+  $("scn").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; st.scn = b.dataset.s; press($("scn"), b); rebuild(false); });
+  $("view").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; st.view = b.dataset.v; press($("view"), b); rebuild(true); });
+  $("air").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    st.T = +b.dataset.t; st.p = +b.dataset.p; $("T").value = st.T; $("P").value = st.p; press($("air"), b); rebuild(true);
+  });
+  [["U", "U", false], ["A", "a", false], ["SP", "spin", false], ["FT", "fat", false], ["T", "T", true], ["P", "p", true]].forEach(function (c) {
+    $(c[0]).addEventListener("input", function (e) {
+      st[c[1]] = parseFloat(e.target.value);
+      if (c[2]) press($("air"), null);
+      rebuild(true);
+    });
+  });
+  var probe = $("probe"), po = {};
+  cv.addEventListener("pointermove", function (e) {
+    var r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    var x = (mx - cx) / S, y = (cy - my) / S;
+    if (inside(x, y)) { probe.style.display = "none"; return; }
+    vel(x, y, po);
+    var v = Math.sqrt(po.u * po.u + po.v * po.v), q = 0.5 * air.rho, dp = q * (st.U * st.U - v * v);
+    probe.innerHTML = "<b>" + fmt(v, 1) + " m/s</b> (" + fmt(v / st.U, 2) + "× wind)<br>" + (dp >= 0 ? "+" : "−") + pa(Math.abs(dp)) + " vs surroundings<br>" + fmt((air.p + dp) / 1000, 3) + " kPa absolute";
+    probe.style.display = "block";
+    var pw = probe.offsetWidth, ph = probe.offsetHeight;
+    probe.style.left = Math.max(6, Math.min(W - pw - 6, mx + 14)) + "px";
+    probe.style.top = Math.max(6, Math.min(H - ph - 6, my + 14)) + "px";
+  });
+  cv.addEventListener("pointerleave", function () { probe.style.display = "none"; });
+
+  var last = 0, raf = 0;
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000 || 0.016); last = now;
+    if (!reduce.matches && !document.hidden && !$("idealWrap").hidden && P.length) { step(dt); draw(); }
+    raf = requestAnimationFrame(frame);
+  }
+  var rt = 0;
+  if ("ResizeObserver" in window) new ResizeObserver(function () { clearTimeout(rt); rt = setTimeout(function () { rebuild(false); }, 120); }).observe(box);
+  if (reduce.addEventListener) reduce.addEventListener("change", function () { rebuild(true); });
+  window.__idealShow = function () { rebuild(false); if (reduce.matches) drawStill(); };
+  rebuild(false);
+  raf = requestAnimationFrame(frame);
+})();
+</script>
+<script src="wake-model.js"></script>
+<script>
+/* Real air: viscous flow past a cylinder, solved by wake-model.js. Everything drawn here comes from its velocity field. */
+(function () {
+  "use strict";
+  var M = window.WakeModel, $ = function (id) { return document.getElementById(id); };
+  var ui = { Re: 100, Dmm: 3, show: "vort", smoke: true, paused: false, mode: "visc" };
+  var NU = 1.461e-5, RHO = 1.2247;                      // sea-level air at 15 °C
+  var s, cv = $("wake"), ctx = cv.getContext("2d"), W = 0, H = 0, dpr = 1, off = document.createElement("canvas"), octx, img;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var DIV = [[42, 120, 214], [140, 184, 236], [250, 248, 245], [243, 168, 136], [213, 64, 43]], SEQ = [[250, 248, 245], [205, 226, 251], [109, 167, 236], [37, 106, 191], [13, 54, 107]];
+  function lut(st) { var L = new Uint8Array(768); for (var n = 0; n < 256; n++) { var q = n / 255 * 4, k = Math.min(3, Math.floor(q)), t = q - k; for (var c = 0; c < 3; c++) L[n * 3 + c] = Math.round(st[k][c] + (st[k + 1][c] - st[k][c]) * t); } return L; }
+  var LD = lut(DIV), LS = lut(SEQ), smoke = [], emitClock = 0, simRate = 0, rateT = 0, rateS = 0, st = null;
+  function f(x, n) { return x.toLocaleString("en-US", { minimumFractionDigits: n, maximumFractionDigits: n }); }
+  function sig3(x) { var a = Math.abs(x); return a >= 100 ? f(x, 0) : a >= 10 ? f(x, 1) : a >= 1 ? f(x, 2) : a >= 0.1 ? f(x, 3) : a === 0 ? "0" : x.toExponential(2).replace("e-", " × 10⁻").replace(/⁻(\d+)$/, function (m, d) { return "⁻" + d.replace(/\d/g, function (c) { return "⁰¹²³⁴⁵⁶⁷⁸⁹"[c]; }); }); }
+
+  function fresh() {
+    s = M.create({ Re: ui.Re });
+    off.width = s.nx; off.height = s.ny; octx = off.getContext("2d"); img = octx.createImageData(s.nx, s.ny);
+    smoke = []; for (var e = 0; e < 17; e++) smoke.push([]);
+    rateT = performance.now(); rateS = 0; st = null;
+  }
+  function layout() { var r = cv.parentElement.getBoundingClientRect(); W = r.width - 28; if (W < 10) return; H = W * s.Ly / s.Lx; dpr = Math.min(window.devicePixelRatio || 1, 2); cv.style.height = H + "px"; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+  function velAt(x, y, o) {                              // bilinear between grid values, for the smoke only
+    var nx = s.nx, ny = s.ny, Wd = nx + 1, h = s.h, fx = Math.max(0, Math.min(nx - 1e-6, x / h)), i = Math.floor(fx), tx = fx - i;
+    var fy = Math.max(0, Math.min(ny - 1 - 1e-6, y / h - 0.5)), j = Math.floor(fy), ty = fy - j;
+    o.u = (s.u[i + j * Wd] * (1 - tx) + s.u[i + 1 + j * Wd] * tx) * (1 - ty) + (s.u[i + (j + 1) * Wd] * (1 - tx) + s.u[i + 1 + (j + 1) * Wd] * tx) * ty;
+    var gx = Math.max(0, Math.min(nx - 1 - 1e-6, x / h - 0.5)), i2 = Math.floor(gx), sx = gx - i2, gy = Math.max(0, Math.min(ny - 1e-6, y / h)), j2 = Math.floor(gy), sy = gy - j2;
+    o.v = (s.v[i2 + j2 * nx] * (1 - sx) + s.v[i2 + 1 + j2 * nx] * sx) * (1 - sy) + (s.v[i2 + (j2 + 1) * nx] * (1 - sx) + s.v[i2 + 1 + (j2 + 1) * nx] * sx) * sy;
+  }
+  var vo = {};
+  function moveSmoke(dt) {
+    emitClock += dt;
+    var emit = emitClock >= 0.14; if (emit) emitClock = 0;
+    for (var e = 0; e < smoke.length; e++) {
+      var line = smoke[e];
+      for (var k = line.length - 1; k >= 0; k--) {
+        var p = line[k]; velAt(p.x, p.y, vo); var mx = p.x + vo.u * dt / 2, my = p.y + vo.v * dt / 2; velAt(mx, my, vo); p.x += vo.u * dt; p.y += vo.v * dt;
+        var dx = p.x - s.xc, dy = p.y - s.yc;
+        if (p.x > s.Lx || p.y < 0 || p.y > s.Ly || dx * dx + dy * dy < 0.2) line.splice(k, 1);
+      }
+      if (emit) line.push({ x: 0.02, y: s.Ly * (e + 0.5) / smoke.length });
+    }
+  }
+  function draw() {
+    if (W < 10) return;
+    var nx = s.nx, ny = s.ny, Wd = nx + 1, h = s.h, d = img.data, i, j, q, val, L = ui.show === "vort" ? LD : LS;
+    for (j = 0; j < ny; j++) for (i = 0; i < nx; i++) {
+      if (ui.show === "vort") {
+        var ii = i < 1 ? 1 : i, jj = j < 1 ? 1 : j;
+        var w = (s.v[ii + jj * nx] - s.v[ii - 1 + jj * nx] - s.u[ii + jj * Wd] + s.u[ii + (jj - 1) * Wd]) / h;      // ω = ∂v/∂x − ∂u/∂y
+        val = 0.5 + 0.5 * Math.max(-1, Math.min(1, w / 4)); val = 0.5 + (val - 0.5 >= 0 ? 1 : -1) * 0.5 * Math.pow(Math.abs(val - 0.5) * 2, 0.7);
+      } else {
+        var uu = 0.5 * (s.u[i + j * Wd] + s.u[i + 1 + j * Wd]), vv = 0.5 * (s.v[i + j * nx] + s.v[i + (j + 1) * nx]);
+        val = Math.min(1, Math.sqrt(uu * uu + vv * vv) / 1.6);
+      }
+      var n = Math.round(val * 255); q = (i + (ny - 1 - j) * nx) * 4; d[q] = L[n * 3]; d[q + 1] = L[n * 3 + 1]; d[q + 2] = L[n * 3 + 2]; d[q + 3] = 255;
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.clearRect(0, 0, W, H); ctx.imageSmoothingEnabled = true; ctx.drawImage(off, 0, 0, W, H);
+    var S = W / s.Lx;
+    if (ui.smoke) {
+      ctx.strokeStyle = ui.show === "vort" ? "rgba(36,39,43,.5)" : "rgba(36,39,43,.6)"; ctx.lineWidth = 1; ctx.lineJoin = "round"; ctx.beginPath();
+      for (var e = 0; e < smoke.length; e++) { var line = smoke[e], prev = null;
+        for (var k = line.length - 1; k >= 0; k--) { var p = line[k], X = p.x * S, Y = H - p.y * S; if (!prev || Math.abs(p.x - prev.x) + Math.abs(p.y - prev.y) > 0.7) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); prev = p; } }
+      ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(s.xc * S, H - s.yc * S, 0.5 * S, 0, 6.2832); ctx.fillStyle = "#FFFFFF"; ctx.fill(); ctx.strokeStyle = "#24272B"; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.font = "11px 'Albert Sans', sans-serif"; ctx.fillStyle = "rgba(36,39,43,.7)"; ctx.textAlign = "left"; ctx.fillText("wind →", 6, 14);
+    // scale bar: one diameter
+    ctx.strokeStyle = "#24272B"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(10, H - 12); ctx.lineTo(10 + S, H - 12); ctx.moveTo(10, H - 16); ctx.lineTo(10, H - 8); ctx.moveTo(10 + S, H - 16); ctx.lineTo(10 + S, H - 8); ctx.stroke();
+    var lb = "1 diameter = " + f(ui.Dmm, 1) + " mm"; ctx.fillStyle = "rgba(250,248,245,.85)"; ctx.fillRect(13 + S, H - 19, ctx.measureText(lb).width + 8, 15); ctx.fillStyle = "rgba(36,39,43,.8)"; ctx.fillText(lb, 16 + S, H - 8);
+  }
+
+  function chart() {
+    var c = $("wChart"), r = c.getBoundingClientRect(), w = r.width, h = r.height; if (w < 10) return; var g = c.getContext("2d");
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    var Hh = s.hist, n = Hh.t.length, span = 50, t1 = Math.max(span, s.t), t0 = t1 - span, Lm = 40, Rm = 54, T = 8, B = 24, lo = -1, hi = 2;
+    var px = function (t) { return Lm + (t - t0) / span * (w - Lm - Rm); }, py = function (y) { return T + (1 - (y - lo) / (hi - lo)) * (h - T - B); };
+    g.font = "11px 'Albert Sans', sans-serif"; g.fillStyle = "#5D6269"; g.lineWidth = 1; g.textAlign = "right"; g.textBaseline = "middle";
+    for (var y = lo; y <= hi + 0.01; y += 0.5) { g.strokeStyle = Math.abs(y) < 1e-9 ? "#8b9199" : "#E3DFD8"; g.beginPath(); g.moveTo(Lm, py(y)); g.lineTo(w - Rm, py(y)); g.stroke(); g.fillText(f(y, 1), Lm - 6, py(y)); }
+    g.textAlign = "center"; g.textBaseline = "top";
+    for (var t = Math.ceil(t0 / 10) * 10; t <= t1; t += 10) g.fillText(String(t), px(t), h - B + 6);
+    g.save(); g.beginPath(); g.rect(Lm, T, w - Lm - Rm, h - T - B); g.clip();
+    [["cd", "#eb6834"], ["cl", "#2a78d6"]].forEach(function (S2) {
+      g.beginPath(); g.strokeStyle = S2[1]; g.lineWidth = 1.8; g.lineJoin = "round"; var started = false;
+      for (var i = 0; i < n; i++) { if (Hh.t[i] < t0) continue; var X = px(Hh.t[i]), Y = py(Math.max(lo - 1, Math.min(hi + 1, Hh[S2[0]][i]))); if (started) g.lineTo(X, Y); else { g.moveTo(X, Y); started = true; } }
+      g.stroke();
+    });
+    g.restore();
+    if (n) { g.textAlign = "left"; g.textBaseline = "middle"; g.fillStyle = "#24272B"; g.fillText("drag " + f(s.cd, 2), w - Rm + 6, py(Math.max(lo, Math.min(hi, s.cd)))); var yl = py(Math.max(lo, Math.min(hi, s.cl))); if (Math.abs(yl - py(s.cd)) < 12) yl = py(s.cd) + 13; g.fillText("lift " + f(s.cl, 2), w - Rm + 6, yl); }
+  }
+
+  function readouts() {
+    st = M.stats(s, 30);
+    var shed = st.clAmp > 0.03 && st.cycles >= 2, ref = M.strouhalRef(ui.Re), D = ui.Dmm / 1000, U = ui.Re * NU / D, q = 0.5 * RHO * U * U * D;
+    $("oRE").textContent = ui.Re; $("oDM").textContent = f(ui.Dmm, 1) + " mm";
+    $("dmHint").textContent = "Only changes the real-world numbers. At " + f(ui.Dmm, 1) + " mm, Reynolds " + ui.Re + " means a " + sig3(U) + " m/s breeze.";
+    var state = $("wState");
+    state.textContent = shed ? "Shedding vortices" : s.t < 25 ? "Starting up" : ui.Re < 47 ? "Steady wake, no shedding" : "Wake starting to wobble";
+    state.className = "chip state" + (shed || (ui.Re < 47 && s.t >= 25) ? " ok" : "");
+    $("wTime").textContent = "Time " + f(s.t, 1) + " (cylinder diameters of travel)";
+    $("wSpeed").textContent = simRate ? f(simRate, 1) + " diameters per second on screen" : "";
+    $("wSt").textContent = shed ? f(st.St, 3) : "none"; $("wStRef").textContent = ref ? f(ref, 3) : "no shedding below Re ≈ 47";
+    $("wCd").textContent = f(st.cd, 2); $("wCl").textContent = shed ? "± " + f(st.clAmp, 2) : "0";
+    $("pU").textContent = sig3(U) + " m/s"; $("pF").textContent = shed ? sig3(st.St * U / D) + " Hz" : "none";
+    $("pD").textContent = sig3(st.cd * q * 1000) + " mN"; $("pL").textContent = shed ? "± " + sig3(st.clAmp * q * 1000) + " mN" : "0";
+    $("wGrid").textContent = s.nx + " × " + s.ny + " cells"; $("wN").textContent = s.N; $("wDt").textContent = f(s.dt, 4);
+    $("wLim").textContent = s.limit === "CFL" ? "air speed" : "diffusion"; $("wCfl").textContent = f(s.cfl, 2); $("wDn").textContent = f(s.dnum, 2); $("wDiv").textContent = M.maxDivergence(s).toExponential(1);
+    $("wLo").textContent = ui.show === "vort" ? "Clockwise spin" : "Still air"; $("wHi").textContent = ui.show === "vort" ? "Counter-clockwise spin" : "1.6 × wind speed";
+    $("wBar").style.background = ui.show === "vort" ? "linear-gradient(90deg,#2a78d6,#8cb8ec 25%,#faf8f5 50%,#f3a888 75%,#d5402b)" : "linear-gradient(90deg,#faf8f5,#cde2fb 25%,#6da7ec 50%,#256abf 75%,#0d366b)";
+    var ck = [];
+    ck.push(ui.Re < 47 ? ["note", "Re " + ui.Re, "Below about 47 the wake is steady: two trapped vortices sit behind the cylinder and nothing sheds. Friction is strong enough to damp any wobble."]
+          : ui.Re <= 190 ? ["ok", "Re " + ui.Re, "Between about 47 and 190 a real wake is two-dimensional and sheds vortices at one steady frequency. This is the range a 2D simulation describes correctly."]
+          : ["warn", "Re " + ui.Re, "Above about 190 a real wake starts to twist along the cylinder's length. A 2D model cannot show that, so treat this setting as approximate."]);
+    if (shed && ref) { var e = (st.St / ref - 1) * 100; ck.push([Math.abs(e) < 8 ? "ok" : "warn", "Strouhal " + (e >= 0 ? "+" : "") + f(e, 1) + "%", "Shedding frequency compared with Williamson's fit to wind-tunnel measurements."]); }
+    ck.push(["note", "Drag", "Expect the drag coefficient to read roughly 10 to 15% above published values (about 1.34 at Reynolds 100). The cylinder is only 10 grid cells across, which is what lets this run live. A test on a finer grid in a tunnel 2.5 times larger still gave 1.47, so most of the gap comes from how coarsely the surface is represented."]);
+    $("wChecks").innerHTML = ck.map(function (r) { return '<li><span class="pill ' + r[0] + '">' + r[1] + "</span><span>" + r[2] + "</span></li>"; }).join("");
+  }
+
+  function press(g, b) { g.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); }
+  $("RE").addEventListener("input", function (e) { ui.Re = s.Re = parseFloat(e.target.value); readouts(); });
+  $("DM").addEventListener("input", function (e) { ui.Dmm = parseFloat(e.target.value); readouts(); });
+  $("wshow").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; ui.show = b.dataset.v; press($("wshow"), b); readouts(); draw(); });
+  $("wsmoke").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; ui.smoke = b.dataset.v === "1"; press($("wsmoke"), b); draw(); });
+  $("wPause").addEventListener("click", function (e) { ui.paused = !ui.paused; e.target.textContent = ui.paused ? "Resume" : "Pause"; });
+  $("wReset").addEventListener("click", function () { fresh(); });
+  var NOTE = { visc: "The Navier-Stokes equations with air's real stickiness. Vortices peel off the cylinder in turn, the wake swings, and there is drag.", ideal: "The same wind with friction switched off. The air closes up smoothly behind the body: no wake, no drag. Four textbook cases." };
+  $("mode").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return; ui.mode = b.dataset.m; press($("mode"), b);
+    $("viscWrap").hidden = ui.mode !== "visc"; $("idealWrap").hidden = ui.mode !== "ideal"; $("modeNote").textContent = NOTE[ui.mode];
+    if (ui.mode === "ideal" && window.__idealShow) window.__idealShow(); else { layout(); draw(); chart(); }
+  });
+  $("modeNote").textContent = NOTE.visc;
+
+  var lastRead = 0;
+  function frame(now) {
+    if (ui.mode === "visc" && !ui.paused && !document.hidden) {
+      var t0 = performance.now(), n = 0, sim0 = s.t;
+      do { M.step(s); if (ui.smoke) moveSmoke(s.dt); n++; } while (performance.now() - t0 < 11 && n < 6);
+      if (!isFinite(s.cd)) fresh();
+      rateS += s.t - sim0; if (now - rateT > 1000) { simRate = rateS / ((now - rateT) / 1000); rateS = 0; rateT = now; }
+      draw();
+      if (now - lastRead > 300) { readouts(); chart(); lastRead = now; }
+    }
+    requestAnimationFrame(frame);
+  }
+  fresh(); layout(); readouts(); draw(); chart();
+  if ("ResizeObserver" in window) new ResizeObserver(function () { layout(); draw(); chart(); }).observe(cv.parentElement);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

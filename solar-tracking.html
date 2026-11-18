@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Is Solar Tracking Worth It?</title>
+<meta name="description" content="A case study by John Kaluiji: from a twitching student solar tracker to an energy and cost model of when tilt and tracking pay off.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Case study layout: the site's single reading column, widened only for charts.
+     Chart colors: flat, fixed tilt, single axis, dual axis in a fixed order everywhere. */
+  :root {
+    --c-flat: #eda100;
+    --c-fixed: #2a78d6;
+    --c-single: #eb6834;
+    --c-dual: #1baf7a;
+    --range: #D8D3CB;
+    --read: 40rem;
+  }
+  body { background: var(--bg); }
+  .back { font-size: .94rem; color: var(--muted); text-decoration: none; }
+  .back:hover { color: var(--fg); }
+  .sim-callout {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 18px; align-items: center;
+    margin-top: 30px; padding: 16px 20px; border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+    border-radius: 10px; background: var(--card); color: var(--fg); text-decoration: none; max-width: 52rem;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .sim-callout:hover { box-shadow: 0 6px 20px rgba(36,39,43,.07); }
+  .sim-callout:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .sim-callout-k { font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .sim-callout-t { font-size: .95rem; color: var(--muted); }
+  .sim-callout-go { font-size: 1.2rem; color: var(--accent); }
+  @media (max-width: 640px) { .sim-callout { grid-template-columns: minmax(0, 1fr) auto; } .sim-callout-t { grid-column: 1 / -1; grid-row: 2; } }
+
+  .cs-head { padding-block: clamp(48px, 9vw, 96px) clamp(36px, 6vw, 56px); border-bottom: 1px solid var(--rule); }
+  .cs-head h1 {
+    margin: 0 0 18px;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(2.5rem, 6.4vw, 4.2rem);
+    line-height: 1.03;
+    letter-spacing: -.02em;
+    max-width: 14em;
+  }
+  .lede { margin: 0; max-width: var(--read); font-size: clamp(1.1rem, 2vw, 1.28rem); line-height: 1.5; }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px 28px;
+    margin: 36px 0 0;
+    padding: 20px 0 0;
+    border-top: 1px solid var(--rule);
+  }
+  .facts dt { font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .facts dd { margin: 0; font-size: .95rem; }
+  .facts a { color: var(--accent); }
+
+  .cs-section { padding-block: clamp(48px, 8vw, 88px); }
+  .cs-section + .cs-section { border-top: 1px solid var(--rule); }
+  .step { margin: 0 0 10px; font-size: .78rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+  .cs-section h2 {
+    margin: 0 0 20px;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(1.8rem, 3.6vw, 2.4rem);
+    line-height: 1.15;
+    letter-spacing: -.01em;
+    max-width: 20em;
+  }
+  .prose { max-width: var(--read); }
+  .prose p { margin: 0 0 16px; }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose strong { font-weight: 600; }
+
+  /* Headline answer tiles */
+  .answer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 32px; }
+  .tile { padding: 20px 20px 18px; border: 1px solid var(--rule); border-radius: 10px; background: var(--card); display: flex; flex-direction: column; gap: 6px; }
+  .tile .big { font-family: var(--font-display); font-size: 2.3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tile .what { font-size: .93rem; color: var(--muted); }
+  .verdict { align-self: flex-start; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; }
+  .verdict.no { background: #F6E3DC; color: #8A3A1F; }
+  .verdict.yes { background: #DDEFE5; color: #1F6142; }
+  .verdict.close { background: #F4EAD2; color: #7A5A12; }
+
+  /* Figures */
+  figure { margin: 32px 0 0; padding: 22px 22px 18px; border: 1px solid var(--rule); border-radius: 10px; background: var(--card); }
+  figcaption { margin-top: 12px; font-size: .88rem; color: var(--muted); max-width: var(--read); }
+  .photo { padding: 0; overflow: hidden; margin: 28px 0 26px; }
+  .photo img { display: block; width: 100%; height: auto; }
+  .photo figcaption { margin: 0; padding: 12px 18px 14px; }
+  .fig-title { margin: 0 0 4px; font-weight: 600; font-size: 1rem; }
+  .fig-sub { margin: 0 0 16px; font-size: .88rem; color: var(--muted); }
+  .chart-box { position: relative; height: 320px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .controls button {
+    font: inherit; font-size: .88rem; font-weight: 500;
+    padding: 6px 14px; border-radius: 99px; cursor: pointer;
+    border: 1px solid var(--rule); background: var(--bg); color: var(--muted);
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .controls button:hover { color: var(--fg); border-color: #CFC9C0; }
+  .controls button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 14px; padding: 0; list-style: none; font-size: .88rem; color: var(--muted); }
+  .legend li { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+
+  /* Yield ladder: one row per setup */
+  .ladder { display: grid; gap: 10px; }
+  .rung { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) 7.5rem; gap: 12px; align-items: center; font-size: .92rem; }
+  .rung .name { color: var(--fg); }
+  .rung .track { height: 22px; position: relative; }
+  .rung .bar { height: 100%; border-radius: 0 4px 4px 0; min-width: 2px; }
+  .rung .val { font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; }
+  .rung .val b { color: var(--fg); font-weight: 600; }
+
+  /* Break-even rows */
+  .be-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+  .be-panel h3 { margin: 0 0 4px; font-size: 1rem; font-weight: 600; }
+  .be-panel .scale-note { margin: 0 0 14px; font-size: .84rem; color: var(--muted); }
+  .be-row { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 10px; align-items: center; margin-bottom: 14px; font-size: .9rem; }
+  .be-track { position: relative; height: 26px; border-bottom: 1px solid var(--rule); }
+  .be-range { position: absolute; top: 9px; height: 8px; border-radius: 4px; background: var(--range); }
+  .be-mark {
+    position: absolute; top: 6px; width: 14px; height: 14px; margin-left: -7px;
+    background: var(--c-fixed); transform: rotate(45deg); border-radius: 2px;
+    box-shadow: 0 0 0 2px var(--card);
+  }
+  .be-ref { position: absolute; top: 3px; width: 0; height: 20px; border-left: 2px dashed var(--fg); opacity: .55; }
+  .key-ref { display: inline-block; width: 0; height: 14px; border-left: 2px dashed var(--fg); opacity: .55; }
+  .be-axis { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 10px; font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .be-axis .ticks { position: relative; height: 1.2em; }
+  .be-axis .ticks span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+  .be-axis .ticks span:first-child { transform: none; }
+  .be-axis .ticks span:last-child { transform: translateX(-100%); }
+  .be-key { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 16px; font-size: .86rem; color: var(--muted); }
+  .be-key span { display: inline-flex; align-items: center; gap: 8px; }
+  .key-diamond { width: 11px; height: 11px; background: var(--c-fixed); transform: rotate(45deg); border-radius: 2px; }
+  .key-range { width: 26px; height: 8px; border-radius: 4px; background: var(--range); }
+
+  /* Moves bars */
+  .moves { display: grid; gap: 12px; }
+  .move-row { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 12px; align-items: center; font-size: .92rem; }
+  .move-row .track { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .move-row .bar { height: 20px; border-radius: 0 4px 4px 0; background: var(--accent); flex: none; }
+  .move-row .num { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-weight: 600; color: var(--muted); font-size: .8rem; }
+  details { margin-top: 14px; font-size: .9rem; }
+  summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+  /* Loop diagram */
+  .loop { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 28px; }
+  .node { padding: 14px 14px 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--card); font-size: .9rem; position: relative; }
+  .node b { display: block; font-weight: 600; margin-bottom: 4px; }
+  .node span { color: var(--muted); font-size: .86rem; }
+  .node:not(:last-child)::after {
+    content: "→"; position: absolute; right: -10px; top: 50%; transform: translate(50%, -50%);
+    color: var(--accent); font-size: 1rem; background: var(--bg); padding: 0 1px;
+  }
+  .loop-back { margin-top: 10px; font-size: .86rem; color: var(--muted); }
+
+  .cite { font-size: .68em; line-height: 0; margin-left: 1px; font-variant-numeric: tabular-nums; }
+  .cite a { color: var(--accent); text-decoration: none; padding: 0 1px; }
+  .tile .big .cite { font-family: var(--font-body); font-size: .32em; vertical-align: super; }
+  .cite a:hover { text-decoration: underline; }
+  .sources { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 46rem; font-size: .9rem; color: var(--muted); }
+  .sources li { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr); gap: 8px; }
+  .sources .n { font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .sources a { color: var(--accent); overflow-wrap: anywhere; }
+  .sources li:target { background: var(--card); outline: 1px solid var(--rule); border-radius: 6px; }
+  .src-group { margin: 28px 0 0; font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .takeaways { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 14px; max-width: var(--read); }
+  .takeaways li { padding-left: 18px; border-left: 2px solid var(--accent); }
+  .cta { display: flex; flex-wrap: wrap; gap: 14px 28px; margin-top: 32px; }
+
+  @media (max-width: 860px) {
+    .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .answer { grid-template-columns: 1fr; }
+    .be-grid { grid-template-columns: 1fr; }
+    .loop { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .node:nth-child(2)::after { display: none; }
+  }
+  @media (max-width: 560px) {
+    figure { padding: 16px 14px 14px; }
+    .rung { grid-template-columns: 6.6rem minmax(0, 1fr) 5.6rem; font-size: .85rem; }
+    .move-row { grid-template-columns: 1fr; gap: 4px; }
+    .be-row, .be-axis { grid-template-columns: 6.4rem minmax(0, 1fr); }
+    .chart-box { height: 260px; }
+    .loop { grid-template-columns: 1fr; }
+    .node::after { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .controls button { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="simulations.html">Simulations</a>
+      <a href="math-solar.html">The math</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="cs-head">
+    <div class="inner">
+      <p class="eyebrow">Case study · Solar energy</p>
+      <h1>Is solar tracking worth it?</h1>
+      <p class="lede">I started with a student solar tracker that wouldn't stop twitching. Rebuilding it in simulation led to a bigger question: when does tracking the sun actually pay for itself?</p>
+      <p class="lede" style="font-size:.95rem;color:var(--muted);margin-top:14px">Every number is cited: numbered marks point to published sources, <b>R</b> to a result file in my repository, <b>A</b> to a labeled assumption, and <b>P</b> to my own account. <a href="#sources" style="color:var(--accent)">See all sources</a>.</p>
+      <dl class="facts">
+        <div><dt>Role</dt><dd>Control logic on a team of five<sup class="cite"><a href="#src-p">P</a></sup>; this rebuild is solo</dd></div>
+        <div><dt>Tools</dt><dd>Python, pvlib, Arduino C++, Wokwi, C</dd></div>
+        <div><dt>Data</dt><dd>NSRDB weather<sup class="cite"><a href="#src-21">21</a></sup>, 7 years of a real array's output<sup class="cite"><a href="#src-38">38</a></sup>, Berkeley Lab, NREL and SEIA/Wood Mackenzie costs<sup class="cite"><a href="#src-1">1</a>,<a href="#src-2">2</a>,<a href="#src-40">40</a></sup></dd></div>
+        <div><dt>Code</dt><dd><a href="https://github.com/kaluij1/solar-tracker-sim" target="_blank" rel="noopener">kaluij1/solar-tracker-sim</a></dd></div>
+      </dl>
+      <a class="sim-callout" href="solar-sim.html">
+        <span class="sim-callout-k">Live simulation</span>
+        <span class="sim-callout-t">Short on time? Watch four panel setups follow the sun in 3D, see farm rows backtrack, and replay the twitching controller on a real day. Runs in your browser.</span>
+        <span class="sim-callout-go" aria-hidden="true">→</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="cs-section" aria-labelledby="s-answer">
+    <div class="inner">
+      <p class="step">The short answer</p>
+      <h2 id="s-answer">Not on a home. On a solar farm it's close, and its energy arrives when power is worth more</h2>
+      <div class="prose">
+        <p>A single axis tracker in Phoenix makes 25% more energy than fixed panels,<sup class="cite"><a href="#src-r">R</a></sup> but on a home it costs far more than that energy is worth. On a farm, where trackers stand in rows, the gain drops to 19% and the extra energy is worth about what the tracker costs.<sup class="cite"><a href="#src-r">R</a></sup><sup class="cite"><a href="#src-40">40</a></sup> The extra energy also arrives in the morning and late afternoon, when power is worth more: priced hour by hour with 2025 California data, tracker rows earn 34% more than fixed panels from 19% more energy.<sup class="cite"><a href="#src-r">R</a></sup></p>
+      </div>
+      <div class="answer">
+        <div class="tile">
+          <span class="big" id="t-gain">+25%<sup class="cite"><a href="#src-r">R</a></sup></span>
+          <span class="what">more energy from a single axis tracker than from fixed panels in Phoenix. About 19% in farm rows that backtrack.<sup class="cite"><a href="#src-r">R</a></sup></span>
+        </div>
+        <div class="tile">
+          <span class="verdict no">Doesn't pay off</span>
+          <span class="big" id="t-home">$0.57/W<sup class="cite"><a href="#src-r">R</a></sup></span>
+          <span class="what">the most a home tracker could cost and still pay back in 25 years. Real ones add $1.26 to $3.15/W.<sup class="cite"><a href="#src-2">2</a>,<a href="#src-3">3</a></sup></span>
+        </div>
+        <div class="tile">
+          <span class="verdict close">Roughly even, on energy</span>
+          <span class="big" id="t-farm">$0.10/W<sup class="cite"><a href="#src-r">R</a></sup></span>
+          <span class="what">what the extra energy is worth in Phoenix farm rows, vs $0.11/W extra cost.<sup class="cite"><a href="#src-40">40</a></sup> Their output is worth 13% more per MWh.<sup class="cite"><a href="#src-r">R</a></sup></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cs-section" aria-labelledby="s-start">
+    <div class="inner">
+      <p class="step">1 · Where it started</p>
+      <h2 id="s-start">A tracker that worked under a lamp and twitched outside</h2>
+      <div class="prose">
+        <p>In my second year at St. Olaf, our team built a solar tracker. The first prototypes were dual axis: four photoresistors, two servos, and an Arduino. The logic was simple. Compare the light on each side, and if the difference beats a threshold, step the servo toward the brighter side.<sup class="cite"><a href="#src-p">P</a></sup></p>
+        <figure class="photo">
+          <img src="tracker-build.jpg" width="1600" height="900" alt="A small solar panel mounted on a horizontal axle between two wooden posts on a lab bench, with a stepper motor fixed to the left post and loose wiring on the bench" loading="lazy">
+          <figcaption>Our final design in progress in the St. Olaf physics lab. Dual axis was easy to prototype but hard to assemble, so we built a single axis tracker, the type most solar farms use: one axle between two wooden posts, turned by a stepper motor on the left post.</figcaption>
+        </figure>
+        <p>Indoors the servo prototypes were smooth. Outdoors they jittered back and forth and barely followed the sun. Logging the sensor readings showed why: clouds and reflections made the readings jump by more than the threshold we had tuned under a steady lamp, so the controller kept reacting to noise. We fixed it by averaging the last 20 readings and widening the threshold into a deadband sized from the noise we measured.<sup class="cite"><a href="#src-p">P</a></sup></p>
+        <p>The field logs from that project were lost.<sup class="cite"><a href="#src-p">P</a></sup> So I rebuilt the prototype's controller in a <strong>hardware-in-the-loop simulation</strong>: the real Arduino code runs on a simulated ATmega328P in Wokwi,<sup class="cite"><a href="#src-25">25</a></sup> and a custom simulated part I wrote in C<sup class="cite"><a href="#src-26">26</a></sup> plays the outside world.</p>
+      </div>
+      <div class="loop" aria-label="Simulation loop">
+        <div class="node"><b>Simulated sun</b><span>Sun path by latitude and season<sup class="cite"><a href="#src-19">19</a></sup>, plus modeled clouds and flicker<sup class="cite"><a href="#src-a">A</a></sup></span></div>
+        <div class="node"><b>Photoresistors</b><span>Shading by a divider wall<sup class="cite"><a href="#src-a">A</a></sup>, response lag<sup class="cite"><a href="#src-29">29</a></sup>, voltage divider<sup class="cite"><a href="#src-27">27</a></sup></span></div>
+        <div class="node"><b>Arduino code</b><span>Reads the 10-bit ADC<sup class="cite"><a href="#src-30">30</a></sup>, compares sides, decides a direction</span></div>
+        <div class="node"><b>Servos</b><span>PWM pulses<sup class="cite"><a href="#src-31">31</a></sup> turned into panel angle at SG90 speed<sup class="cite"><a href="#src-32">32</a></sup></span></div>
+      </div>
+      <p class="loop-back">The panel angle feeds back into how much light each sensor sees, which closes the loop.</p>
+      <figure>
+        <p class="fig-title">The fix, measured</p>
+        <p class="fig-sub">Dual axis tracker over one simulated day with 30% cloud cover and 10% reflection flicker (modeled<sup class="cite"><a href="#src-a">A</a></sup>)</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Controller</th><th>Servo moves</th><th>Direction reversals</th><th>Avg. pointing error</th></tr></thead>
+            <tbody id="hil-table"></tbody>
+          </table>
+        </div>
+        <figcaption>Averaging and a noise-sized deadband cut direction reversals from 749 to 7.<sup class="cite"><a href="#src-r">R</a></sup> The last row is a controller that ignores the sensors and calculates where the sun is, which comes up again in section 5.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="cs-section" aria-labelledby="s-energy">
+    <div class="inner">
+      <p class="step">2 · How much energy</p>
+      <h2 id="s-energy">Modeling a year of sunlight, hour by hour</h2>
+      <div class="prose">
+        <p>To ask whether tracking is worth it, I first needed to know how much energy it adds. I built an energy model in <strong>pvlib</strong><sup class="cite"><a href="#src-8">8</a></sup> for a 4.8 kW home-sized system: twelve 400 W panels and a 3.85 kW inverter, real parts from the database NREL's tools use.<sup class="cite"><a href="#src-17">17</a></sup> For every hour of a typical year,<sup class="cite"><a href="#src-21">21</a>,<a href="#src-22">22</a></sup> it works out where the sun is,<sup class="cite"><a href="#src-9">9</a></sup> how much light lands on the tilted panel,<sup class="cite"><a href="#src-10">10</a></sup> how much bounces off the glass,<sup class="cite"><a href="#src-11">11</a>,<a href="#src-12">12</a></sup> how hot the cells get,<sup class="cite"><a href="#src-13">13</a></sup> and what the inverter delivers.<sup class="cite"><a href="#src-15">15</a></sup></p>
+        <p>I compared four setups at two sites: <strong>Phoenix</strong>, where only 23% of the sunlight is diffuse,<sup class="cite"><a href="#src-r">R</a></sup> and <strong>Des Moines</strong>, where 41% is.<sup class="cite"><a href="#src-r">R</a></sup> Diffuse light is scattered across the whole sky, and flat panels already collect it, so a tracker gains most from the direct beam.<sup class="cite"><a href="#src-20">20</a></sup></p>
+      </div>
+      <figure>
+        <p class="fig-title">Energy per kW of panels, per year</p>
+        <p class="fig-sub">Percent gain over panels fixed at the best tilt</p>
+        <div class="controls" role="group" aria-label="Choose a site" data-group="ladder">
+          <button type="button" data-site="Phoenix, AZ" aria-pressed="true">Phoenix, AZ</button>
+          <button type="button" data-site="Des Moines, IA" aria-pressed="false">Des Moines, IA</button>
+        </div>
+        <div class="ladder" id="ladder"></div>
+        <figcaption id="ladder-note"></figcaption>
+        <figcaption>Values from my model.<sup class="cite"><a href="#src-r">R</a></sup> The best fixed tilt sitting near each site's latitude matches the textbook rule.<sup class="cite"><a href="#src-18">18</a></sup></figcaption>
+      </figure>
+      <figure>
+        <p class="fig-title">Energy through the year</p>
+        <p class="fig-sub">AC energy per month, 4.8 kW system</p>
+        <div class="controls" role="group" aria-label="Choose a site" data-group="monthly">
+          <button type="button" data-site="Phoenix, AZ" aria-pressed="true">Phoenix, AZ</button>
+          <button type="button" data-site="Des Moines, IA" aria-pressed="false">Des Moines, IA</button>
+        </div>
+        <ul class="legend" id="monthly-legend"></ul>
+        <div class="chart-box"><canvas id="monthly" aria-label="Monthly energy by setup"></canvas></div>
+        <figcaption>Trackers earn most of their gain in summer. In winter, a single axis tracker lies nearly flat at noon, a poor angle for the low sun, and in Phoenix it actually loses to fixed panels from November to January.<sup class="cite"><a href="#src-r">R</a></sup></figcaption>
+      </figure>
+      <div class="prose" style="margin-top:28px">
+        <p><strong>Checking the model.</strong> Against seven years of minute-by-minute output from a real NREL test array in Golden, Colorado,<sup class="cite"><a href="#src-38">38</a>,<a href="#src-39">39</a></sup> with nothing tuned to fit, the same equations predicted the total energy within 2% from satellite weather alone.<sup class="cite"><a href="#src-r">R</a></sup> Swapping in NREL's simpler PVWatts equations<sup class="cite"><a href="#src-16">16</a></sup> changes every result by less than 1.5%,<sup class="cite"><a href="#src-r">R</a></sup> and the tracking gains match published ranges: EnergySage puts single axis gains at 25 to 35%.<sup class="cite"><a href="#src-3">3</a></sup> Single hours are far less certain, so this study only reports yearly totals.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cs-section" aria-labelledby="s-cost">
+    <div class="inner">
+      <p class="step">3 · Is it worth the money</p>
+      <h2 id="s-cost">How much could a tracker cost and still pay for itself?</h2>
+      <div class="prose">
+        <p>Tracker prices vary a lot, so instead of guessing one I flipped the question: how much extra could a tracker cost, per watt of panels, and still pay for itself over 25 years? That <strong>break-even price</strong> depends on how much extra energy it makes and what that energy is worth: about $0.15 per kWh to an Arizona home,<sup class="cite"><a href="#src-4">4</a></sup> and about $0.03 per kWh for a solar farm selling power under contract.<sup class="cite"><a href="#src-1">1</a></sup></p>
+        <p>For a farm I modeled the trackers in rows that backtrack,<sup class="cite"><a href="#src-7">7</a></sup> because that is how they are built. Panels covering 35% of the ground is my assumption.<sup class="cite"><a href="#src-a">A</a></sup></p>
+      </div>
+      <figure>
+        <p class="fig-title">Break-even price vs what trackers really add</p>
+        <p class="fig-sub">Extra cost per watt of panels. Each panel has its own scale.</p>
+        <div class="be-grid" id="breakeven"></div>
+        <div class="be-key">
+          <span><i class="key-diamond" aria-hidden="true"></i>Most a tracker can cost and still pay back in 25 years</span>
+          <span><i class="key-range" aria-hidden="true"></i>What trackers actually add (published range)</span>
+          <span><i class="key-ref" aria-hidden="true"></i>Like-for-like 2026 price, $0.11/W</span>
+        </div>
+        <figcaption>Homes: every diamond sits left of the market range, so no home tracker pays back.<sup class="cite"><a href="#src-r">R</a></sup> Solar farms: only a Phoenix tracker standing alone clears the like-for-like price; in rows it falls just short, and Des Moines falls well short.<sup class="cite"><a href="#src-r">R</a></sup> Published ranges: homes<sup class="cite"><a href="#src-2">2</a>,<a href="#src-3">3</a></sup>, solar farms<sup class="cite"><a href="#src-1">1</a>,<a href="#src-2">2</a>,<a href="#src-40">40</a></sup>. Assumptions: 6% discount rate, 0.5% yearly panel degradation, extra maintenance of $20/kW per year for homes and $2/kW for farms.<sup class="cite"><a href="#src-a">A</a></sup></figcaption>
+        <details>
+          <summary>Show the numbers</summary>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Case</th><th>Extra kWh per kW</th><th>Break-even</th><th>Market</th><th>Payback or verdict</th></tr></thead>
+              <tbody id="econ-table"></tbody>
+            </table>
+          </div>
+        </details>
+      </figure>
+      <div class="prose" style="margin-top:28px">
+        <p><strong>Which tracker price is the right one?</strong> Published figures disagree because they measure different things. Berkeley Lab found 2025 tracker projects cost only $0.01/W more than fixed ones, but those are different projects, and the report says the comparison "does not control for other factors" like size, land and labor.<sup class="cite"><a href="#src-1">1</a></sup> SEIA and Wood Mackenzie model the same system built both ways: $0.11/W extra for Q2 2026.<sup class="cite"><a href="#src-40">40</a></sup> For deciding how to build one farm, that like-for-like price is the fair yardstick, and against it Phoenix farm rows break even in only 3 of 9 combinations of contract price and discount rate.<sup class="cite"><a href="#src-r">R</a></sup></p>
+        <p><strong>Yet 96% of new US utility solar uses single axis trackers.</strong><sup class="cite"><a href="#src-1">1</a></sup> When a model disagrees with an industry, the model is probably missing something. Mine values every kWh the same, but trackers shift output toward pricier hours,<sup class="cite"><a href="#src-5">5</a></sup> which section 4 tests. Dual axis trackers would add more energy still, but their complex mechanics and heavy structures have kept them rare on farms;<sup class="cite"><a href="#src-34">34</a></sup> my model has no cost data for them, so it can't weigh that trade-off.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cs-section" aria-labelledby="s-value">
+    <div class="inner">
+      <p class="step">4 · When the energy arrives</p>
+      <h2 id="s-value">Pricing every hour: a tracker's extra energy is worth more than its share</h2>
+      <div class="prose">
+        <p>To test the timing explanation, I priced every hour of output with CAISO's 2025 day-ahead prices for Southern California,<sup class="cite"><a href="#src-41">41</a>,<a href="#src-42">42</a></sup> the clearest case of a grid flooded with midday solar.<sup class="cite"><a href="#src-43">43</a></sup> To keep weather and prices in the same place, I used typical-year weather for Daggett, a Mojave Desert site in that price zone, instead of Phoenix.<sup class="cite"><a href="#src-21">21</a></sup> Power there averaged $32/MWh in 2025, but only $10 to $12 from 9 am to 2 pm and about $50 at 6 pm, and 31% of a fixed panel's energy came in hours when the price was below zero.<sup class="cite"><a href="#src-r">R</a></sup></p>
+      </div>
+      <figure>
+        <p class="fig-title">Price and output through the day, 2025</p>
+        <p class="fig-sub">Average by hour (Pacific standard time). Output per kW of panels over the year.</p>
+        <div class="chart-box" style="height:170px"><canvas id="v-price" aria-label="Average electricity price by hour of day"></canvas></div>
+        <ul class="legend" id="v-legend" style="margin-top:14px"></ul>
+        <div class="chart-box" style="height:230px"><canvas id="v-output" aria-label="Energy by hour of day, fixed panels versus trackers in rows"></canvas></div>
+        <figcaption>The tracker rows make their extra energy in the morning and late afternoon, outside the cheapest midday hours.<sup class="cite"><a href="#src-r">R</a></sup></figcaption>
+      </figure>
+      <figure>
+        <p class="fig-title">Extra energy vs extra money, compared with fixed panels facing south</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Setup</th><th>Extra energy</th><th>Extra market revenue</th><th>Value per MWh</th></tr></thead>
+            <tbody id="value-table"></tbody>
+          </table>
+        </div>
+        <figcaption>In farm rows, trackers add 19% more energy but 34% more revenue. Facing panels west also moves output toward evening, but loses so much energy that revenue still falls.<sup class="cite"><a href="#src-r">R</a></sup></figcaption>
+      </figure>
+      <div class="prose" style="margin-top:28px">
+        <p><strong>Does timing make farm trackers pay?</strong> Partly. Per MWh, tracker rows' output is worth 13% more than fixed panels'.<sup class="cite"><a href="#src-r">R</a></sup> On a flat $30/MWh contract, the extra energy is still worth about $0.10/W, roughly even with the $0.11/W price.<sup class="cite"><a href="#src-r">R</a></sup><sup class="cite"><a href="#src-40">40</a></sup> Sold at 2025 market prices it is worth only $0.07/W, because midday solar of every kind earned little: fixed panels averaged $12.45/MWh.<sup class="cite"><a href="#src-r">R</a></sup></p>
+        <p>So timing adds real value and helps explain the industry's choice, but this study can't show it is the whole reason. The bigger story in 2025 California is that midday solar of any kind earned very little, and batteries keep growing to move that energy into the evening.<sup class="cite"><a href="#src-43">43</a></sup> The weather is a typical year and the prices are from 2025, so they are matched by date and hour, not by actual cloudy days.<sup class="cite"><a href="#src-a">A</a></sup></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cs-section" aria-labelledby="s-control">
+    <div class="inner">
+      <p class="step">5 · Back to the controller</p>
+      <h2 id="s-control">Did fixing the twitch earn more energy? Barely. It saved the motors.</h2>
+      <div class="prose">
+        <p>Finally, I connected the two halves. I took each controller's pointing error from the simulation and ran it through the energy model for a full Phoenix year. I also added a controller that uses no light sensors at all: it calculates where the sun is from the date and time, which is how commercial trackers are described as pointing.<sup class="cite"><a href="#src-6">6</a></sup></p>
+      </div>
+      <figure>
+        <p class="fig-title">Pointing error barely costs energy</p>
+        <p class="fig-sub">Dual axis tracker in Phoenix. Dots mark each controller's average error.</p>
+        <ul class="legend" id="pe-legend"></ul>
+        <div class="chart-box"><canvas id="pointing" aria-label="Energy lost versus pointing error"></canvas></div>
+        <figcaption>A panel collects the most when it faces the sun squarely, and the loss grows with the cosine of the pointing error,<sup class="cite"><a href="#src-18">18</a></sup> so a few degrees off costs almost nothing. Even the worst controller loses 0.17% of the year's energy.<sup class="cite"><a href="#src-r">R</a></sup> The cost of twitching is wear: the unfiltered controller moves the motors 12 times as often as the calculated one,<sup class="cite"><a href="#src-r">R</a></sup> and on a real Phoenix summer day it reverses about 14,000 times an hour while losing only 0.05% of the energy.<sup class="cite"><a href="#src-r">R</a></sup><sup class="cite"><a href="#src-a">A</a></sup> Commercial trackers point by calculating the sun's position and confirm the angle with a tilt sensor.<sup class="cite"><a href="#src-6">6</a></sup></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="cs-section" aria-labelledby="s-learn">
+    <div class="inner">
+      <p class="step">What I took away</p>
+      <h2 id="s-learn">Lessons from the rebuild</h2>
+      <ul class="takeaways">
+        <li><strong>Measure the decision, not just the device.</strong> My prototype question was "does it follow the sun?" The useful question was "is following the sun worth the cost?", and answering it took weather, cost and price data.</li>
+        <li><strong>The convenient number isn't always the right one.</strong> A $0.01/W tracker premium made the farm case look easy. Checking what each cost figure measured changed the answer from "clearly pays" to "roughly even".<sup class="cite"><a href="#src-1">1</a>,<a href="#src-40">40</a></sup><sup class="cite"><a href="#src-r">R</a></sup></li>
+        <li><strong>Check models against reality.</strong> Matching another model only proves two models agree. Matching a real array within 2% says the physics holds, and a result that contradicts an entire industry says something is missing, here the value of when energy arrives.<sup class="cite"><a href="#src-r">R</a></sup></li>
+      </ul>
+      <div class="prose" style="margin-top:28px">
+        <p><strong>Limits.</strong> One typical year per site;<sup class="cite"><a href="#src-22">22</a></sup> a flat electricity price except in section 4, which uses one year of prices at one hub;<sup class="cite"><a href="#src-a">A</a></sup> row shading of the direct beam only, with fixed panels modeled without rows of their own;<sup class="cite"><a href="#src-a">A</a></sup> no tax credits, bifacial panels or dual axis cost data; and a measured-data check on one fixed-tilt array.<sup class="cite"><a href="#src-38">38</a></sup> The controller results use modeled cloud noise.<sup class="cite"><a href="#src-a">A</a></sup></p>
+      </div>
+      <div class="cta">
+        <a class="text-link" href="solar-sim.html">Try the live simulation <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="math-solar.html" style="margin-left:22px">The whole study in equations <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="https://github.com/kaluij1/solar-tracker-sim" target="_blank" rel="noopener">Code, data and full results on GitHub <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="simulations.html">Back to all simulations <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+  </section>
+  <section class="cs-section" id="sources" aria-labelledby="s-sources">
+    <div class="inner">
+      <p class="step">Sources</p>
+      <h2 id="s-sources">Where every claim comes from</h2>
+      <div class="prose"><p>Numbers match <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/SOURCES.md" target="_blank" rel="noopener" style="color:var(--accent)">SOURCES.md</a> in the repository, which also gives the exact quote each claim relies on. NREL was renamed the National Laboratory of the Rockies in December 2025; documents are cited under the name they were published with.</p></div>
+      <p class="src-group">Costs, prices and industry practice</p>
+      <ul class="sources">
+        <li id="src-1"><span class="n">1</span><span>Lawrence Berkeley National Laboratory, <i>Utility-Scale Solar, 2026 Edition</i> (slides, Oct. 2026). 96% of new 2025 capacity used single-axis tracking; $1.31/W DC tracking vs $1.30/W DC fixed (2025); PPAs typically $25–35/MWh in the West; tracking adds more than 5 points of capacity factor where sunlight is strongest. <a href="https://eta-publications.lbl.gov/sites/default/files/2026-10/utility_scale_solar_2026_edition_slides.pdf" target="_blank" rel="noopener">https://eta-publications.lbl.gov/sites/default/files/2026-10/utility_scale_solar_2026_edition_slides.pdf</a></span></li>
+        <li id="src-2"><span class="n">2</span><span>NREL, PV system cost benchmark, Q1 2024 (report 92257). Residential price $3.15/W DC; $0.20/W DC tracking premium in Berkeley Lab 2023 data. <a href="https://nrel.gov/docs/fy25osti/92257.pdf" target="_blank" rel="noopener">https://nrel.gov/docs/fy25osti/92257.pdf</a></span></li>
+        <li id="src-3"><span class="n">3</span><span>EnergySage, "Is a solar tracking system worth it?" Trackers add 40 to 100% to system cost; single axis gains 25 to 35%; dual axis 5 to 10% more; generally not worth it for residential, usually rooftop, systems. <a href="https://www.energysage.com/business-solutions/solar-trackers-everything-need-know/" target="_blank" rel="noopener">https://www.energysage.com/business-solutions/solar-trackers-everything-need-know/</a></span></li>
+        <li id="src-4"><span class="n">4</span><span>EnergySage, "Cost of electricity in Arizona." Average residential rate 15 cents/kWh, November 2026. <a href="https://www.energysage.com/local-data/electricity-cost/az/" target="_blank" rel="noopener">https://www.energysage.com/local-data/electricity-cost/az/</a></span></li>
+        <li id="src-5"><span class="n">5</span><span>J. H. Kim, A. D. Mills, R. Wiser et al., Berkeley Lab, Sept. 2021. Tracking shifts solar output toward higher-priced late-afternoon hours. <a href="https://emp.lbl.gov/news/project-developer-options-enhance-value-solar" target="_blank" rel="noopener">https://emp.lbl.gov/news/project-developer-options-enhance-value-solar</a></span></li>
+        <li id="src-6"><span class="n">6</span><span>The Fredericks Company, "AN 1004: Inclinometers for Solar Tracking Systems." Algorithms tell trackers where to point, inclinometers confirm it, and photodiodes may lose usable feedback when clouds cover the sun. <a href="https://www.frederickscompany.com/application-notes/inclinometers-for-solar-tracking-systems/" target="_blank" rel="noopener">https://www.frederickscompany.com/application-notes/inclinometers-for-solar-tracking-systems/</a></span></li>
+        <li id="src-7"><span class="n">7</span><span>K. Anderson and M. Mikofski, "Slope-Aware Backtracking for Single-Axis Trackers," NREL/TP-5K00-76626, 2020. <a href="https://doi.org/10.2172/1660126" target="_blank" rel="noopener">https://doi.org/10.2172/1660126</a></span></li>
+        <li id="src-40"><span class="n">40</span><span>SEIA and Wood Mackenzie, <i>US Solar Market Insight Q3 2026</i>, executive summary (Sept. 2026). Utility-scale system prices for Q2 2026 from a "bottoms-up modeling methodology": fixed-tilt $0.95/W DC, single-axis tracking $1.06/W DC. <a href="https://tecsol-quotidien.fr/wp-content/uploads/2026/09/USSMI_Q3_2026_ES.pdf" target="_blank" rel="noopener">https://tecsol-quotidien.fr/wp-content/uploads/2026/09/USSMI_Q3_2026_ES.pdf</a></span></li>
+        <li id="src-41"><span class="n">41</span><span>California ISO, OASIS: 2025 day-ahead hourly locational marginal prices at trading hub TH_SP15_GEN-APND. <a href="http://oasis.caiso.com" target="_blank" rel="noopener">http://oasis.caiso.com</a>; my copy: <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/data/caiso_sp15_dam_2025.csv" target="_blank" rel="noopener">caiso_sp15_dam_2025.csv</a></span></li>
+        <li id="src-42"><span class="n">42</span><span>gridstatus, open source Python library used to download the CAISO prices (version 0.37). <a href="https://opensource.gridstatus.io" target="_blank" rel="noopener">https://opensource.gridstatus.io</a></span></li>
+        <li id="src-43"><span class="n">43</span><span>Grid Status, "Batteries Boom but Solar Slides in CAISO," 2026: midday curtailment rose by nearly 2 GW in 2026, midday prices often negative, battery charging and discharging rising. <a href="https://blog.gridstatus.io/batteries-boom-but-solar-slides-in-caiso/" target="_blank" rel="noopener">https://blog.gridstatus.io/batteries-boom-but-solar-slides-in-caiso/</a></span></li>
+        <li id="src-34"><span class="n">34</span><span>S. Chunduri, "Dual-Axis Trackers Remain A Niche In Utility Applications," TaiyangNews, Apr. 2, 2026. Complex mechanical architecture and heavy structural requirements keep them uncommon in utility-scale projects. <a href="https://taiyangnews.info/technology/dual-axis-trackers-remain-a-niche-in-utility-applications" target="_blank" rel="noopener">https://taiyangnews.info/technology/dual-axis-trackers-remain-a-niche-in-utility-applications</a></span></li>
+      </ul>
+      <p class="src-group">Solar physics and modeling methods</p>
+      <ul class="sources">
+        <li id="src-8"><span class="n">8</span><span>K. S. Anderson, C. W. Hansen, W. F. Holmgren et al., "pvlib python: 2023 project update," <i>Journal of Open Source Software</i> 8(92), 5994, 2023. <a href="https://doi.org/10.21105/joss.05994" target="_blank" rel="noopener">https://doi.org/10.21105/joss.05994</a></span></li>
+        <li id="src-9"><span class="n">9</span><span>I. Reda and A. Andreas, "Solar position algorithm for solar radiation applications," <i>Solar Energy</i> 76(5), 577–589, 2004. <a href="https://doi.org/10.1016/j.solener.2003.12.003" target="_blank" rel="noopener">https://doi.org/10.1016/j.solener.2003.12.003</a></span></li>
+        <li id="src-10"><span class="n">10</span><span>R. Perez et al., "Modeling daylight availability and irradiance components from direct and global irradiance," <i>Solar Energy</i> 44(5), 271–289, 1990. <a href="https://archive-ouverte.unige.ch/unige:17206" target="_blank" rel="noopener">https://archive-ouverte.unige.ch/unige:17206</a></span></li>
+        <li id="src-11"><span class="n">11</span><span>W. De Soto, S. A. Klein and W. A. Beckman, "Improvement and validation of a model for photovoltaic array performance," <i>Solar Energy</i> 80, 78–88, 2006. <a href="https://doi.org/10.1016/j.solener.2005.06.010" target="_blank" rel="noopener">https://doi.org/10.1016/j.solener.2005.06.010</a></span></li>
+        <li id="src-12"><span class="n">12</span><span>B. Marion, "Numerical method for angle-of-incidence correction factors for diffuse radiation incident photovoltaic modules," <i>Solar Energy</i> 147, 344–348, 2017. <a href="https://doi.org/10.1016/j.solener.2017.03.027" target="_blank" rel="noopener">https://doi.org/10.1016/j.solener.2017.03.027</a></span></li>
+        <li id="src-13"><span class="n">13</span><span>D. L. King, W. E. Boyson and J. A. Kratochvil, "Photovoltaic Array Performance Model," SAND2004-3535, 2004. <a href="https://www.osti.gov/biblio/919131" target="_blank" rel="noopener">https://www.osti.gov/biblio/919131</a></span></li>
+        <li id="src-15"><span class="n">15</span><span>D. King, S. Gonzalez, G. Galbraith and W. Boyson, "Performance Model for Grid-Connected Photovoltaic Inverters," SAND2007-5036, 2007. <a href="https://doi.org/10.2172/920449" target="_blank" rel="noopener">https://doi.org/10.2172/920449</a></span></li>
+        <li id="src-16"><span class="n">16</span><span>A. P. Dobos, "PVWatts Version 5 Manual," NREL/TP-6A20-62641, 2014. <a href="https://doi.org/10.2172/1158421" target="_blank" rel="noopener">https://doi.org/10.2172/1158421</a></span></li>
+        <li id="src-17"><span class="n">17</span><span>California Energy Commission module and inverter databases, as distributed with NREL's System Advisor Model. <a href="https://github.com/NREL/SAM" target="_blank" rel="noopener">https://github.com/NREL/SAM</a></span></li>
+        <li id="src-18"><span class="n">18</span><span>PVEducation, "Solar Radiation on a Tilted Surface." Power is greatest when the panel is perpendicular to the sun; a fixed tilt equal to the latitude maximizes yearly output. <a href="https://www.pveducation.org/es/pvcdrom/solar-radiation-tilted-surface" target="_blank" rel="noopener">https://www.pveducation.org/es/pvcdrom/solar-radiation-tilted-surface</a></span></li>
+        <li id="src-19"><span class="n">19</span><span>PVEducation, "Elevation Angle." <a href="https://pveducation.org/pvcdrom/properties-of-sunlight/elevation-angle" target="_blank" rel="noopener">https://pveducation.org/pvcdrom/properties-of-sunlight/elevation-angle</a></span></li>
+        <li id="src-20"><span class="n">20</span><span>Penn State, EME 812, "3.1. Why tracking?" Flat panels accept both beam and diffuse radiation; trackers hold the best angle to the sun. <a href="https://courses.ems.psu.edu/eme812/node/519" target="_blank" rel="noopener">https://courses.ems.psu.edu/eme812/node/519</a></span></li>
+      </ul>
+      <p class="src-group">Weather data</p>
+      <ul class="sources">
+        <li id="src-21"><span class="n">21</span><span>M. Sengupta et al., "The National Solar Radiation Data Base (NSRDB)," <i>Renewable and Sustainable Energy Reviews</i> 89, 51–60, 2018. <a href="https://doi.org/10.1016/j.rser.2018.03.003" target="_blank" rel="noopener">https://doi.org/10.1016/j.rser.2018.03.003</a></span></li>
+        <li id="src-22"><span class="n">22</span><span>S. Wilcox and W. Marion, <i>Users Manual for TMY3 Data Sets</i>, NREL/TP-581-43156, 2008. Typical years are not suited to worst-case design. <a href="https://www.nrel.gov/docs/fy08osti/43156.pdf" target="_blank" rel="noopener">https://www.nrel.gov/docs/fy08osti/43156.pdf</a></span></li>
+      </ul>
+      <p class="src-group">Measured data</p>
+      <ul class="sources">
+        <li id="src-38"><span class="n">38</span><span>C. Deline, K. Perry, M. Deceglie, M. Muller, W. Sekulic and D. Jordan, "Photovoltaic Data Acquisition (PVDAQ) Public Datasets," Open Energy Data Initiative, NREL, 2021. PVDAQ system 4, Golden, Colorado. <a href="https://doi.org/10.25984/1846021" target="_blank" rel="noopener">https://doi.org/10.25984/1846021</a></span></li>
+        <li id="src-39"><span class="n">39</span><span>M. G. Deceglie, M. Springer, K. Anderson et al., RdTools: data file and system description for PVDAQ system 4 (1 kW, 40° tilt, south facing, 2010 to 2016). <a href="https://github.com/NatLabRockies/rdtools/releases/download/3.0.0/pvdaq_system_4_2010-2016_subset_soil_signal.csv" target="_blank" rel="noopener">https://github.com/NatLabRockies/rdtools/releases/download/3.0.0/pvdaq_system_4_2010-2016_subset_soil_signal.csv</a></span></li>
+      </ul>
+      <p class="src-group">Hardware and simulation</p>
+      <ul class="sources">
+        <li id="src-25"><span class="n">25</span><span>Wokwi Docs, "Arduino Uno." Powered by the ATmega328p and simulated with the AVR8js library. <a href="https://docs.wokwi.com/parts/wokwi-arduino-uno" target="_blank" rel="noopener">https://docs.wokwi.com/parts/wokwi-arduino-uno</a></span></li>
+        <li id="src-26"><span class="n">26</span><span>Wokwi Docs, "Chips API: Getting started." <a href="https://docs.wokwi.com/chips-api/getting-started" target="_blank" rel="noopener">https://docs.wokwi.com/chips-api/getting-started</a></span></li>
+        <li id="src-27"><span class="n">27</span><span>Wokwi Docs, "wokwi-photoresistor-sensor." An LDR in series with 10 kΩ, rl10 = 50 kΩ, gamma = 0.7. <a href="https://docs.wokwi.com/parts/wokwi-photoresistor-sensor" target="_blank" rel="noopener">https://docs.wokwi.com/parts/wokwi-photoresistor-sensor</a></span></li>
+        <li id="src-29"><span class="n">29</span><span>Advanced Photonix PDV-P9203 CdS photoresistor datasheet. Response times in the tens of milliseconds (60 ms rise, 25 ms decay at 10 lux). <a href="https://www.lasercomponents.com/fileadmin/user_upload/home/Datasheets/apx/ldr-cds/pdv-p9203-photoresistor.pdf" target="_blank" rel="noopener">https://www.lasercomponents.com/fileadmin/user_upload/home/Datasheets/apx/ldr-cds/pdv-p9203-photoresistor.pdf</a></span></li>
+        <li id="src-30"><span class="n">30</span><span>Arduino, "analogRead()." 10-bit ADC on the Uno, 0 to 1023, 4.9 mV per step. <a href="https://docs.arduino.cc/language-reference/en/functions/analog-io/analogRead/" target="_blank" rel="noopener">https://docs.arduino.cc/language-reference/en/functions/analog-io/analogRead/</a></span></li>
+        <li id="src-31"><span class="n">31</span><span>Arduino Servo library, Servo.h. Pulse widths 544 to 2400 µs, 20 ms refresh. <a href="https://github.com/arduino-libraries/Servo/blob/master/src/Servo.h" target="_blank" rel="noopener">https://github.com/arduino-libraries/Servo/blob/master/src/Servo.h</a></span></li>
+        <li id="src-32"><span class="n">32</span><span>SG90 micro servo datasheet. Operating speed 0.1 s per 60°. <a href="https://bit.nkust.edu.tw/~csshieh/teach/111A/mc/datasheet/SG90.pdf" target="_blank" rel="noopener">https://bit.nkust.edu.tw/~csshieh/teach/111A/mc/datasheet/SG90.pdf</a></span></li>
+      </ul>
+      <p class="src-group">My results, assumptions and account</p>
+      <ul class="sources">
+        <li id="src-r"><span class="n">R</span><span>Results from my repository, each produced by code in it: Energy, gains, capacity factor, diffuse share, PVWatts check (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/summary.csv" target="_blank" rel="noopener">summary.csv</a>); Monthly energy (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/monthly.csv" target="_blank" rel="noopener">monthly.csv</a>); Results across weather data versions (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/dataset_check.csv" target="_blank" rel="noopener">dataset_check.csv</a>); Trackers in rows (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/rows.csv" target="_blank" rel="noopener">rows.csv</a>); Break-even prices and payback (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/economics.csv" target="_blank" rel="noopener">economics.csv</a>); Controller error, moves, reversals and energy cost (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/controller_energy.csv" target="_blank" rel="noopener">controller_energy.csv</a>); Energy lost vs pointing error (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/pointing_error.csv" target="_blank" rel="noopener">pointing_error.csv</a>).; Tracker price comparison (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/cost_check.csv" target="_blank" rel="noopener">cost_check.csv</a>); Measured array check (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/measured_validation.csv" target="_blank" rel="noopener">measured_validation.csv</a>); Controller on a real day (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/web-sim/real-day.js" target="_blank" rel="noopener">real-day.js</a>, run in the simulator page); Value at hourly prices (<a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/value.csv" target="_blank" rel="noopener">value.csv</a>, <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/results/value_by_hour.csv" target="_blank" rel="noopener">value_by_hour.csv</a>)</span></li>
+        <li id="src-a"><span class="n">A</span><span>Assumptions, not taken from a published source: the divider wall geometry, cloud and flicker noise statistics, and LDR lag values in the controller simulation; a ground coverage ratio of 0.35 and three bypass blocks per module for trackers in rows, with fixed panels modeled without rows; cloud strength and sensor brightness on a real day for the controller; pairing 2025 prices with typical-year weather by date and hour; a 25-year life, 6% discount rate, 0.5% yearly degradation, and extra tracker maintenance of $20/kW per year (homes) and $2/kW per year (farms). Each is listed with its reasoning in the <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/energy-yield/README.md" target="_blank" rel="noopener">energy-yield README</a> and the <a href="https://github.com/kaluij1/solar-tracker-sim/blob/main/README.md" target="_blank" rel="noopener">main README</a>.</span></li>
+        <li id="src-p"><span class="n">P</span><span>My own account of the 2023–2024 St. Olaf team project. The original code, logs and parameter values were not kept.</span></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+(function () {
+  "use strict";
+  var DATA = {"setups": ["Flat", "Fixed, best tilt", "Single axis", "Dual axis"], "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], "sites": {"Phoenix, AZ": {"bestTilt": 32, "diffuse": 23.2, "ghi": 2131, "yield": {"Flat": 1549, "Fixed, best tilt": 1783, "Single axis": 2228, "Dual axis": 2489}, "energy": {"Flat": 7445, "Fixed, best tilt": 8567, "Single axis": 10707, "Dual axis": 11961}, "gainFixed": {"Flat": -13.1, "Fixed, best tilt": 0.0, "Single axis": 25.0, "Dual axis": 39.6}, "gainFlat": {"Flat": 0.0, "Fixed, best tilt": 15.1, "Single axis": 43.8, "Dual axis": 60.7}, "monthly": {"Flat": [380, 444, 636, 781, 885, 875, 780, 749, 633, 540, 403, 338], "Fixed, best tilt": [622, 621, 760, 812, 822, 769, 710, 752, 726, 736, 643, 594], "Single axis": [588, 655, 900, 1110, 1235, 1217, 1040, 1040, 923, 825, 629, 545], "Dual axis": [804, 793, 989, 1155, 1258, 1240, 1057, 1072, 997, 976, 836, 784]}, "tilt": {"deg": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60], "pct": [86.9, 88.49, 89.99, 91.38, 92.67, 93.86, 94.94, 95.92, 96.79, 97.55, 98.22, 98.77, 99.22, 99.57, 99.82, 99.96, 100.0, 99.94, 99.78, 99.52, 99.15, 98.68, 98.11, 97.43, 96.64, 95.76, 94.77, 93.69, 92.5, 91.22, 89.85]}}, "Des Moines, IA": {"bestTilt": 38, "diffuse": 40.6, "ghi": 1499, "yield": {"Flat": 1125, "Fixed, best tilt": 1358, "Single axis": 1600, "Dual axis": 1829}, "energy": {"Flat": 5407, "Fixed, best tilt": 6523, "Single axis": 7686, "Dual axis": 8789}, "gainFixed": {"Flat": -17.1, "Fixed, best tilt": 0.0, "Single axis": 17.8, "Dual axis": 34.7}, "gainFlat": {"Flat": 0.0, "Fixed, best tilt": 20.6, "Single axis": 42.1, "Dual axis": 62.5}, "monthly": {"Flat": [212, 272, 419, 552, 646, 680, 712, 640, 510, 352, 227, 185], "Fixed, best tilt": [411, 434, 534, 596, 624, 622, 675, 670, 618, 519, 416, 404], "Single axis": [342, 436, 587, 753, 865, 904, 952, 886, 722, 537, 369, 333], "Dual axis": [511, 551, 662, 796, 895, 928, 981, 936, 805, 667, 529, 527]}, "tilt": {"deg": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60], "pct": [82.89, 84.63, 86.3, 87.89, 89.39, 90.79, 92.1, 93.32, 94.43, 95.45, 96.36, 97.17, 97.88, 98.49, 98.99, 99.39, 99.7, 99.9, 100.0, 100.0, 99.9, 99.7, 99.41, 99.01, 98.52, 97.93, 97.25, 96.48, 95.61, 94.66, 93.61]}}}, "econ": [{"site": "Des Moines, IA", "market": "Residential", "setup": "Single axis", "breakeven": 0.199, "low": 1.26, "high": 3.15, "extra": 242, "pbLow": 77.3, "pbHigh": 193.3, "verdict": "Does not pay off"}, {"site": "Des Moines, IA", "market": "Residential", "setup": "Dual axis", "breakeven": 0.62, "low": 1.26, "high": 3.15, "extra": 471, "pbLow": 24.8, "pbHigh": 62.1, "verdict": "Does not pay off"}, {"site": "Des Moines, IA", "market": "Utility scale", "setup": "Single axis", "breakeven": 0.064, "low": 0.01, "high": 0.2, "extra": 242, "pbLow": 1.9, "pbHigh": 38.0, "verdict": "Pays off only if cheap"}, {"site": "Des Moines, IA", "market": "Utility scale", "setup": "Dual axis", "breakeven": 0.148, "low": 0.01, "high": 0.2, "extra": 471, "pbLow": 0.8, "pbHigh": 16.5, "verdict": "No market price data"}, {"site": "Phoenix, AZ", "market": "Residential", "setup": "Single axis", "breakeven": 0.572, "low": 1.26, "high": 3.15, "extra": 445, "pbLow": 26.9, "pbHigh": 67.3, "verdict": "Does not pay off"}, {"site": "Phoenix, AZ", "market": "Residential", "setup": "Dual axis", "breakeven": 1.05, "low": 1.26, "high": 3.15, "extra": 706, "pbLow": 14.7, "pbHigh": 36.6, "verdict": "Does not pay off"}, {"site": "Phoenix, AZ", "market": "Utility scale", "setup": "Single axis", "breakeven": 0.139, "low": 0.01, "high": 0.2, "extra": 445, "pbLow": 0.9, "pbHigh": 17.6, "verdict": "Pays off only if cheap"}, {"site": "Phoenix, AZ", "market": "Utility scale", "setup": "Dual axis", "breakeven": 0.235, "low": 0.01, "high": 0.2, "extra": 706, "pbLow": 0.5, "pbHigh": 10.4, "verdict": "No market price data"}], "pointing": {"err": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 7.5, 10.0, 15.0, 20.0, 30.0], "loss": [0.0, 0.011, 0.044, 0.101, 0.179, 0.281, 0.633, 1.124, 2.493, 4.35, 9.248]}, "controllers": [{"name": "Clear, light sensors", "err": 1.6, "loss": 0.032, "moves": 359, "rev": 3}, {"name": "Cloudy, light sensors, raw", "err": 2.2, "loss": 0.059, "moves": 2966, "rev": 749}, {"name": "Cloudy, light sensors, filtered", "err": 3.9, "loss": 0.169, "moves": 409, "rev": 7}, {"name": "Cloudy, calculated sun position", "err": 0.3, "loss": 0.004, "moves": 252, "rev": 3}], "farm": [{"site": "Phoenix, AZ", "rows": false, "breakeven": 0.139, "low": 0.01, "high": 0.2}, {"site": "Phoenix, AZ", "rows": true, "breakeven": 0.099, "low": 0.01, "high": 0.2}, {"site": "Des Moines, IA", "rows": false, "breakeven": 0.064, "low": 0.01, "high": 0.2}, {"site": "Des Moines, IA", "rows": true, "breakeven": 0.03, "low": 0.01, "high": 0.2}], "value": {"hours": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "price": [44.8, 37.5, 23.9, 14.4, 12.0, 11.2, 11.0, 10.5, 10.1, 11.8, 18.4, 34.1, 47.1, 50.5, 49.4], "fixed": [2.3, 22.1, 87.2, 158.3, 214.9, 250.1, 259.7, 251.8, 229.4, 186.8, 126.2, 54.1, 8.4, 0.8, 0.0], "rows": [16.4, 88.5, 168.1, 219.8, 229.5, 226.2, 219.6, 217.5, 221.3, 220.2, 196.2, 128.3, 50.4, 3.9, 0.0], "table": [{"setup": "Single axis, standing alone", "energy": 25.9, "revenue": 57.6, "perMwh": 25.2}, {"setup": "Single axis in rows, backtracking (GCR 0.35)", "energy": 19.1, "revenue": 34.3, "perMwh": 12.8}, {"setup": "Dual axis", "energy": 41.2, "revenue": 79.4, "perMwh": 27.1}, {"setup": "Fixed, best tilt, facing west", "energy": -21.3, "revenue": -9.5, "perMwh": 15.0}]}};
+  var css = getComputedStyle(document.documentElement);
+  function v(name) { return css.getPropertyValue(name).trim(); }
+  var COLORS = { "Flat": v("--c-flat"), "Fixed, best tilt": v("--c-fixed"), "Single axis": v("--c-single"), "Dual axis": v("--c-dual") };
+  var LABELS = { "Flat": "Flat", "Fixed, best tilt": "Fixed, best tilt", "Single axis": "Single axis tracker", "Dual axis": "Dual axis tracker" };
+  var fmt = new Intl.NumberFormat("en-US");
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function el(tag, attrs, text) {
+    var e = document.createElement(tag);
+    if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  /* ---------- controller table ---------- */
+  var hilNames = {
+    "Cloudy, light sensors, raw": "Light sensors, original logic",
+    "Cloudy, light sensors, filtered": "Light sensors, averaged + deadband",
+    "Cloudy, calculated sun position": "Calculated sun position"
+  };
+  var hil = document.getElementById("hil-table");
+  DATA.controllers.forEach(function (c) {
+    if (!hilNames[c.name]) return;
+    var tr = el("tr");
+    tr.appendChild(el("td", null, hilNames[c.name]));
+    tr.appendChild(el("td", null, fmt.format(c.moves)));
+    tr.appendChild(el("td", null, fmt.format(c.rev)));
+    tr.appendChild(el("td", null, c.err.toFixed(1) + "°"));
+    hil.appendChild(tr);
+  });
+
+  /* ---------- yield ladder ---------- */
+  var ladder = document.getElementById("ladder");
+  var ladderNote = document.getElementById("ladder-note");
+  var maxYield = 0;
+  Object.keys(DATA.sites).forEach(function (s) {
+    DATA.setups.forEach(function (k) { maxYield = Math.max(maxYield, DATA.sites[s].yield[k]); });
+  });
+  function drawLadder(site) {
+    var d = DATA.sites[site];
+    ladder.textContent = "";
+    DATA.setups.forEach(function (k) {
+      var row = el("div", { "class": "rung" });
+      row.appendChild(el("span", { "class": "name" }, k === "Fixed, best tilt" ? "Fixed at " + d.bestTilt + "°" : LABELS[k]));
+      var track = el("div", { "class": "track" });
+      var bar = el("div", { "class": "bar", title: LABELS[k] + ": " + fmt.format(d.yield[k]) + " kWh per kW per year" });
+      bar.style.width = (100 * d.yield[k] / maxYield) + "%";
+      bar.style.background = COLORS[k];
+      track.appendChild(bar);
+      row.appendChild(track);
+      var val = el("span", { "class": "val" });
+      var b = el("b", null, fmt.format(d.yield[k]));
+      val.appendChild(b);
+      var g = d.gainFixed[k];
+      val.appendChild(document.createTextNode(k === "Fixed, best tilt" ? "  base" : "  " + (g > 0 ? "+" : "") + g.toFixed(0) + "%"));
+      row.appendChild(val);
+      ladder.appendChild(row);
+    });
+    ladderNote.textContent = site === "Phoenix, AZ"
+      ? "Phoenix: tilting the panels to " + d.bestTilt + "° adds " + d.gainFlat["Fixed, best tilt"].toFixed(0) + "% over lying flat. Only " + d.diffuse + "% of the sunlight is diffuse, so tracking has plenty of direct sun to chase."
+      : "Des Moines: tilt matters more this far north (+" + d.gainFlat["Fixed, best tilt"].toFixed(0) + "% over flat, best at " + d.bestTilt + "°), but tracking gains less because " + Math.round(d.diffuse) + "% of the light is diffuse.";
+  }
+
+  /* ---------- charts ---------- */
+  var monthlyChart = null, pointingChart = null;
+  function chartDefaults() {
+    if (!window.Chart) return false;
+    Chart.defaults.font.family = v("--font-body");
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = v("--muted");
+    Chart.defaults.borderColor = v("--rule");
+    Chart.defaults.animation = reduced ? false : { duration: 400 };
+    return true;
+  }
+  function tooltipStyle() {
+    return {
+      backgroundColor: v("--card"), titleColor: v("--fg"), bodyColor: v("--fg"),
+      borderColor: v("--rule"), borderWidth: 1, padding: 10, boxPadding: 4, usePointStyle: true
+    };
+  }
+  function legend(id, items) {
+    var ul = document.getElementById(id);
+    ul.textContent = "";
+    items.forEach(function (it) {
+      var li = el("li");
+      var sw = el("span", { "class": "swatch", "aria-hidden": "true" });
+      sw.style.background = it.color;
+      if (it.round) sw.style.borderRadius = "50%";
+      li.appendChild(sw);
+      li.appendChild(document.createTextNode(it.label));
+      ul.appendChild(li);
+    });
+  }
+
+  function drawMonthly(site) {
+    var d = DATA.sites[site];
+    var sets = DATA.setups.map(function (k) {
+      return {
+        label: LABELS[k], data: d.monthly[k], borderColor: COLORS[k], backgroundColor: COLORS[k],
+        borderWidth: 2, pointRadius: 3.5, pointHoverRadius: 6, pointBorderColor: v("--card"), pointBorderWidth: 1.5, tension: 0.25
+      };
+    });
+    // Rebuild the chart instead of animating an update: some embedded browsers pause
+    // animation frames, which left the old site's lines on screen after switching.
+    var redraw = !!monthlyChart;
+    if (monthlyChart) monthlyChart.destroy();
+    monthlyChart = new Chart(document.getElementById("monthly"), {
+      type: "line",
+      data: { labels: DATA.months, datasets: sets },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: redraw ? false : undefined,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: Object.assign(tooltipStyle(), {
+            callbacks: { label: function (c) { return " " + c.dataset.label + ": " + fmt.format(c.parsed.y) + " kWh"; } }
+          })
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: { beginAtZero: true, max: 1400, ticks: { stepSize: 200, callback: function (val) { return fmt.format(val); } },
+               title: { display: true, text: "kWh per month" } }
+        }
+      }
+    });
+  }
+
+  function drawValue() {
+    var V = DATA.value, labels = V.hours.map(function (h) { return (h % 12 || 12) + (h < 12 ? " am" : " pm"); });
+    var common = { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false } };
+    new Chart(document.getElementById("v-price"), {
+      type: "line",
+      data: { labels: labels, datasets: [{ label: "Average price", data: V.price, borderColor: v("--fg"), backgroundColor: v("--fg"), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.25 }] },
+      options: Object.assign({}, common, {
+        plugins: { legend: { display: false }, tooltip: Object.assign(tooltipStyle(), { callbacks: { label: function (c) { return " Average price: $" + c.parsed.y.toFixed(1) + "/MWh"; } } }) },
+        scales: { x: { grid: { display: false }, ticks: { color: "rgba(0,0,0,0)" } }, y: { afterFit: function (a) { a.width = 62; }, beginAtZero: true, max: 60, ticks: { stepSize: 20, callback: function (x) { return "$" + x; } }, title: { display: true, text: "$/MWh" } } }
+      })
+    });
+    var sets = [
+      { label: "Fixed, facing south", data: V.fixed, color: v("--c-fixed") },
+      { label: "Single axis rows, backtracking", data: V.rows, color: v("--c-single") }
+    ];
+    legend("v-legend", sets.map(function (x) { return { label: x.label, color: x.color }; }));
+    new Chart(document.getElementById("v-output"), {
+      type: "line",
+      data: { labels: labels, datasets: sets.map(function (x) { return { label: x.label, data: x.data, borderColor: x.color, backgroundColor: x.color, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.25 }; }) },
+      options: Object.assign({}, common, {
+        plugins: { legend: { display: false }, tooltip: Object.assign(tooltipStyle(), { callbacks: { label: function (c) { return " " + c.dataset.label + ": " + fmt.format(c.parsed.y) + " kWh/kW"; } } }) },
+        scales: { x: { grid: { display: false } }, y: { afterFit: function (a) { a.width = 62; }, beginAtZero: true, ticks: { stepSize: 100 }, title: { display: true, text: "kWh per kW per year" } } }
+      })
+    });
+    var tb = document.getElementById("value-table"), NAMES = { "Single axis, standing alone": "Single axis, standing alone", "Single axis in rows, backtracking (GCR 0.35)": "Single axis in rows, backtracking", "Dual axis": "Dual axis, standing alone", "Fixed, best tilt, facing west": "Fixed, facing west" };
+    function pct(x) { return (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(0) + "%"; }
+    V.table.forEach(function (r) {
+      var tr = el("tr");
+      tr.appendChild(el("td", null, NAMES[r.setup]));
+      tr.appendChild(el("td", null, pct(r.energy)));
+      tr.appendChild(el("td", null, pct(r.revenue)));
+      tr.appendChild(el("td", null, pct(r.perMwh)));
+      tb.appendChild(tr);
+    });
+  }
+
+  function drawPointing() {
+    var curve = DATA.pointing.err.map(function (e, i) { return { x: e, y: DATA.pointing.loss[i] }; })
+      .filter(function (p) { return p.x <= 20; });
+    var marks = [
+      { key: "Cloudy, calculated sun position", label: "Calculated sun position", color: v("--c-dual") },
+      { key: "Clear, light sensors", label: "Light sensors, clear sky", color: v("--c-flat") },
+      { key: "Cloudy, light sensors, raw", label: "Light sensors, cloudy, original", color: v("--c-single") },
+      { key: "Cloudy, light sensors, filtered", label: "Light sensors, cloudy, filtered", color: "#6250d6" }
+    ];
+    var sets = [{
+      type: "line", label: "Energy lost per year", data: curve, borderColor: v("--accent"), backgroundColor: v("--accent"),
+      borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.3, order: 2
+    }];
+    marks.forEach(function (m) {
+      var c = DATA.controllers.filter(function (x) { return x.name === m.key; })[0];
+      sets.push({
+        type: "scatter", label: m.label, data: [{ x: c.err, y: c.loss }], backgroundColor: m.color,
+        borderColor: v("--card"), borderWidth: 2, pointRadius: 7, pointHoverRadius: 9, order: 1
+      });
+    });
+    legend("pe-legend", [{ label: "Energy lost per year", color: v("--accent") }].concat(marks.map(function (m) {
+      var c = DATA.controllers.filter(function (x) { return x.name === m.key; })[0];
+      return { label: m.label + " (" + c.err.toFixed(1) + "°, " + c.loss.toFixed(2) + "%)", color: m.color, round: true };
+    })));
+    pointingChart = new Chart(document.getElementById("pointing"), {
+      type: "scatter",
+      data: { datasets: sets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "nearest", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: Object.assign(tooltipStyle(), {
+            callbacks: {
+              label: function (c) {
+                return " " + c.dataset.label + ": " + c.parsed.x.toFixed(1) + "° off, " + c.parsed.y.toFixed(2) + "% lost";
+              }
+            }
+          })
+        },
+        scales: {
+          x: { type: "linear", min: 0, max: 20, ticks: { stepSize: 5, callback: function (val) { return val + "°"; } },
+               title: { display: true, text: "Average pointing error" }, grid: { display: false } },
+          y: { min: 0, max: 5, ticks: { stepSize: 1, callback: function (val) { return val + "%"; } },
+               title: { display: true, text: "Energy lost per year" } }
+        }
+      }
+    });
+  }
+
+  /* ---------- break-even rows ---------- */
+  function drawBreakeven() {
+    var root = document.getElementById("breakeven");
+    var panels = [
+      { market: "Residential", title: "Homes", max: 3.5, ticks: [0, 1, 2, 3, 3.5], setups: ["Single axis", "Dual axis"] },
+      { market: "Utility scale", title: "Solar farms (single axis)", max: 0.25, ticks: [0, 0.05, 0.10, 0.15, 0.20, 0.25], setups: ["Single axis"], ref: 0.11 }
+    ];
+    panels.forEach(function (p) {
+      var panel = el("div", { "class": "be-panel" });
+      panel.appendChild(el("h3", null, p.title));
+      panel.appendChild(el("p", { "class": "scale-note" }, "Scale: $0 to $" + p.max.toFixed(2) + " per watt"));
+      (p.ref ? DATA.farm : DATA.econ.filter(function (r) { return r.market === p.market && p.setups.indexOf(r.setup) > -1; }))
+        .sort(function (a, b) { return a.site < b.site ? 1 : -1; })
+        .forEach(function (r) {
+          var row = el("div", { "class": "be-row" });
+          var place = r.site.split(",")[0];
+          row.appendChild(el("span", null, p.market === "Residential" ? place + ", " + r.setup.toLowerCase().replace(" axis", "") + " axis" : place + (r.rows ? ", in rows" : ", alone")));
+          var track = el("div", { "class": "be-track" });
+          var range = el("div", { "class": "be-range", title: "Market: $" + r.low.toFixed(2) + " to $" + r.high.toFixed(2) + " per watt" });
+          range.style.left = (100 * r.low / p.max) + "%";
+          range.style.width = (100 * (Math.min(r.high, p.max) - r.low) / p.max) + "%";
+          var mark = el("div", { "class": "be-mark", title: "Break-even: $" + r.breakeven.toFixed(2) + " per watt", role: "img",
+                                  "aria-label": "Break-even $" + r.breakeven.toFixed(2) + " per watt; market $" + r.low.toFixed(2) + " to $" + r.high.toFixed(2) });
+          mark.style.left = (100 * r.breakeven / p.max) + "%";
+          track.appendChild(range);
+          if (p.ref) { var ref = el("div", { "class": "be-ref", title: "Like-for-like 2026 price: $" + p.ref.toFixed(2) + " per watt" }); ref.style.left = (100 * p.ref / p.max) + "%"; track.appendChild(ref); }
+          track.appendChild(mark);
+          row.appendChild(track);
+          panel.appendChild(row);
+        });
+      var axis = el("div", { "class": "be-axis" });
+      axis.appendChild(el("span"));
+      var t = el("div", { "class": "ticks" });
+      p.ticks.forEach(function (x) {
+        var tick = el("span", null, "$" + (p.max < 1 ? x.toFixed(2) : x.toFixed(x % 1 ? 1 : 0)));
+        tick.style.left = (100 * x / p.max) + "%";
+        t.appendChild(tick);
+      });
+      axis.appendChild(t);
+      panel.appendChild(axis);
+      root.appendChild(panel);
+    });
+
+    var tb = document.getElementById("econ-table");
+    DATA.econ.forEach(function (r) {
+      if (r.market === "Utility scale") return;
+      var tr = el("tr");
+      tr.appendChild(el("td", null, r.site.split(",")[0] + ", " + (r.market === "Residential" ? "home" : "solar farm") + ", " + r.setup.toLowerCase()));
+      tr.appendChild(el("td", null, "+" + fmt.format(r.extra)));
+      tr.appendChild(el("td", null, "$" + r.breakeven.toFixed(2) + "/W"));
+      tr.appendChild(el("td", null, "$" + r.low.toFixed(2) + " to $" + r.high.toFixed(2)));
+      var pb = isFinite(r.pbLow) ? r.pbLow.toFixed(0) + " to " + r.pbHigh.toFixed(0) + " yr" : "never";
+      if (r.pbLow < 1) pb = "under 1 to " + r.pbHigh.toFixed(0) + " yr";
+      tr.appendChild(el("td", null, pb));
+      tb.appendChild(tr);
+    });
+    DATA.farm.forEach(function (r) {
+      var tr = el("tr");
+      tr.appendChild(el("td", null, r.site.split(",")[0] + ", solar farm, single axis " + (r.rows ? "in rows, backtracking" : "standing alone")));
+      tr.appendChild(el("td", null, "–"));
+      tr.appendChild(el("td", null, "$" + r.breakeven.toFixed(2) + "/W"));
+      tr.appendChild(el("td", null, "$0.11 like-for-like; $0.01 to $0.20 published"));
+      tr.appendChild(el("td", null, r.breakeven >= 0.11 ? "pays at $0.11" : "does not pay at $0.11"));
+      tb.appendChild(tr);
+    });
+  }
+
+  /* ---------- moves bars ---------- */
+  function drawMoves() {
+    var root = document.getElementById("moves");
+    var order = [
+      ["Cloudy, calculated sun position", "Calculated sun position"],
+      ["Clear, light sensors", "Light sensors, clear sky"],
+      ["Cloudy, light sensors, filtered", "Light sensors, cloudy, filtered"],
+      ["Cloudy, light sensors, raw", "Light sensors, cloudy, original"]
+    ];
+    var max = Math.max.apply(null, DATA.controllers.map(function (c) { return c.moves; }));
+    order.forEach(function (o) {
+      var c = DATA.controllers.filter(function (x) { return x.name === o[0]; })[0];
+      var row = el("div", { "class": "move-row" });
+      row.appendChild(el("span", null, o[1]));
+      var track = el("div", { "class": "track" });
+      var bar = el("div", { "class": "bar", title: o[1] + ": " + fmt.format(c.moves) + " moves" });
+      bar.style.width = "calc((100% - 15rem) * " + (c.moves / max).toFixed(4) + ")";
+      track.appendChild(bar);
+      track.appendChild(el("span", { "class": "num" }, fmt.format(c.moves) + " moves · " + c.rev + " reversals"));
+      row.appendChild(track);
+      root.appendChild(row);
+    });
+  }
+
+  /* ---------- site toggles ---------- */
+  function wire(group, draw) {
+    var buttons = document.querySelectorAll('[data-group="' + group + '"] button');
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () {
+        buttons.forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+        draw(b.getAttribute("data-site"));
+      });
+    });
+  }
+
+  drawLadder("Phoenix, AZ");
+  wire("ladder", drawLadder);
+  drawBreakeven();
+  legend("monthly-legend", DATA.setups.map(function (k) { return { label: LABELS[k], color: COLORS[k] }; }));
+  if (chartDefaults()) {
+    drawValue();
+    drawMonthly("Phoenix, AZ");
+    wire("monthly", drawMonthly);
+    drawPointing();
+  }
+})();
+</script>
+</body>
+</html>

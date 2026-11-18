@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Math: Solar Tracking</title>
+<meta name="description" content="The solar tracking project, told from the problem to the answer in formulas and numbers: one hour worked by hand, then the year, the rows, the money and the controller.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Playpen+Sans:wght@300;400&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="math.css">
+</head>
+<body>
+<header class="nav">
+  <div class="inner nav-row">
+    <a class="monogram" href="index.html" aria-label="Home">John Kaluiji</a>
+    <nav aria-label="Main">
+      <a href="simulations.html">Simulations</a>
+      <a href="solar-sim.html">Simulation</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="math-head">
+    <div class="inner">
+      <p class="eyebrow">The math · Solar tracking</p>
+      <h1>Is tracking the sun worth it, in equations</h1>
+      <p class="lede">The solar tracking project, told from the problem to the answer in formulas and numbers: one hour worked by hand, then the year, the rows, the money and the controller.</p>
+      <p class="legend-ink"><span class="ink-f">formula</span><span class="ink-n">with the numbers in</span><span class="ink-c">checks and side notes</span></p>
+      <a class="text-link" href="solar-sim.html"><span aria-hidden="true">←</span> Back to the simulation</a>
+    </div>
+  </section>
+  <div class="inner notebook">
+<section class="part"><h2>The problem</h2><div class="step"><h3><span class="n">0</span>Given</h3><div class="math"><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">system</td><td class="val">4.805 kW DC,&nbsp; 3.85 kW AC</td><td>12 × 400 W panels, one inverter</td></tr><tr><td class="sym">sites</td><td class="val">Phoenix 33.49° N,&nbsp; Des Moines 41.57° N</td><td>typical-year weather, 8760 hours</td></tr><tr><td class="sym">mounts</td><td class="val">flat,&nbsp; fixed β = latitude-ish,&nbsp; 1-axis ±60°,&nbsp; 2-axis</td><td>four setups</td></tr><tr><td class="sym">price</td><td class="val">$0.15/kWh home,&nbsp; $0.03/kWh farm</td><td>value of energy</td></tr></tbody></table></div></div></div>
+<div class="step"><h3><span class="n">?</span>Find</h3><div class="math"><p class="eq">E<sub>year</sub> for each mount,&nbsp;&nbsp; gain = <span class="fr"><span>E<sub>track</sub></span><span>E<sub>fixed</sub></span></span> − 1,&nbsp;&nbsp; and the most a tracker can cost</p></div></div>
+</section>
+<section class="part"><h2>One hour, worked: Phoenix, 18 June, 10:00–11:00</h2><div class="step"><h3><span class="n">1</span>Weather</h3><div class="math"><p class="eq num">DNI = 920,&nbsp; DHI = 108,&nbsp; GHI = 920 W/m<sup>2</sup>,&nbsp; T<sub>a</sub> = 42 °C,&nbsp; w = 3.7 m/s,&nbsp; ρ<sub>g</sub> = 0.18</p></div></div>
+<div class="step"><h3><span class="n">2</span>Sun</h3><div class="math"><p class="eq">cos Z = sin φ sin δ + cos φ cos δ cos H</p><p class="eq num">δ = 23.41°,&nbsp; H = -29.8° &nbsp;(10:30 solar)</p><p class="eq num">cos Z = sin 33.49° sin 23.41° + cos 33.49° cos 23.41° cos(-29.8°)</p><p class="eq num">&nbsp;&nbsp;&nbsp;&nbsp;⇒&nbsp; Z = 27.98°</p><p class="eq num">γ<sub>s</sub> = 103.3° &nbsp;(east of south)</p></div></div>
+<div class="step"><h3><span class="n">3</span>Mount angles</h3><div class="math"><p class="eq">fixed: β = 32°, γ = 180°</p><p class="eq">1-axis: R = atan2( sin Z sin γ<sub>s</sub>, cos Z )</p><p class="eq">&nbsp;&nbsp;&nbsp;&nbsp;= atan2( sin 27.98° sin 103.3°, cos 27.98° ) = 27.34°</p><p class="eq">2-axis: β = Z = 27.98°, γ = γ<sub>s</sub></p></div></div>
+<div class="step"><h3><span class="n">4</span>Angle of incidence</h3><div class="math"><p class="eq">cos θ<sub>i</sub> = cos Z cos β + sin Z sin β cos(γ<sub>s</sub> − γ)</p><p class="eq num">fixed: &nbsp;cos 27.98° cos 32° + sin 27.98° sin 32° cos(−76.7°)</p><p class="eq num">&nbsp;&nbsp;&nbsp;&nbsp;= 0.806 &nbsp;⇒&nbsp; θ<sub>i</sub> = 36.3°</p><p class="eq num">1-axis: θ<sub>i</sub> = 6.2°,&nbsp;&nbsp; 2-axis: θ<sub>i</sub> = 0°</p></div></div>
+<div class="step"><h3><span class="n">5</span>Light on the panel</h3><div class="math"><p class="eq">E = DNI cos θ<sub>i</sub> + E<sub>sky</sub> + GHI ρ<sub>g</sub> <span class="fr"><span>1 − cos β</span><span>2</span></span></p><p class="eq">E<sub>sky</sub> = DHI [ ½(1 − F<sub>1</sub>)(1 + cos β) + F<sub>1</sub> <span class="fr"><span>a</span><span>b</span></span> + F<sub>2</sub> sin β ] &nbsp;(Perez)</p><p class="eq">AM = <span class="fr"><span>1</span><span>cos Z + 0.50572 (96.07995° − Z)<sup>−1.6364</sup></span></span> = 1.132</p><p class="eq num">fixed: &nbsp;E = 920 × 0.806 + 107.8 + 920 × 0.18 × <span class="fr"><span>1 − cos 32°</span><span>2</span></span></p><p class="eq num">&nbsp;&nbsp;&nbsp;&nbsp;= 741.6 + 107.8 + 12.6 = 862.0 W/m<sup>2</sup></p><p class="eq num">1-axis: &nbsp;E = 914.6 + 119.8 + 9.3 = 1043.7 W/m<sup>2</sup></p></div></div>
+<div class="step"><h3><span class="n">6</span>Through the glass</h3><div class="math"><p class="eq">sin θ<sub>r</sub> = <span class="fr"><span>sin θ<sub>i</sub></span><span>n</span></span>,&nbsp;&nbsp; τ = e<sup>−KL/cos θ<sub>r</sub></sup> [ 1 − ½(r<sub>s</sub> + r<sub>p</sub>) ],&nbsp;&nbsp; IAM = <span class="fr"><span>τ(θ<sub>i</sub>)</span><span>τ(0)</span></span></p><p class="eq num">IAM(0°, 30°, 60°, 80°) = 1.000, 0.998, 0.946, 0.634</p><p class="eq num">fixed: &nbsp;E<sub>eff</sub> = 851.3 W/m<sup>2</sup></p></div></div>
+<div class="step"><h3><span class="n">7</span>Cell temperature</h3><div class="math"><p class="eq">T<sub>c</sub> = E e<sup>a + b w</sup> + T<sub>a</sub> + <span class="fr"><span>E</span><span>1000</span></span> ΔT</p><p class="eq num">T<sub>c</sub> = 862.0 e<sup>−3.56 − 0.075 × 3.7</sup> + 42 + 0.862 × 3 = 63.2 °C</p></div></div>
+<div class="step"><h3><span class="n">8</span>DC power</h3><div class="math"><p class="eq">P<sub>dc</sub> = <span class="fr"><span>E<sub>eff</sub></span><span>1000</span></span> P<sub>dc0</sub> [ 1 + γ<sub>p</sub>(T<sub>c</sub> − 25) ] (1 − L)</p><p class="eq num">P<sub>dc</sub> = 0.8513 × 4805 × [1 − 0.003448 × 38.2] × (1 − 0.1408) = 3052 W</p></div></div>
+<div class="step"><h3><span class="n">9</span>AC power</h3><div class="math"><p class="eq">ζ = <span class="fr"><span>P<sub>dc</sub></span><span>P<sub>ac0</sub> / 0.96</span></span>,&nbsp;&nbsp; η = <span class="fr"><span>0.96</span><span>0.9637</span></span>( −0.0162ζ − <span class="fr"><span>0.0059</span><span>ζ</span></span> + 0.9858 )</p><p class="eq">P<sub>ac</sub> = min(P<sub>ac0</sub>, η P<sub>dc</sub>)</p><p class="eq num">ζ = 0.761,&nbsp; η = 0.962 &nbsp;⇒&nbsp; P<sub>ac</sub> = 2936 W</p><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">flat</td><td class="val">E = 920.5 W/m²</td><td>P_{ac} = 3131 W</td></tr><tr><td class="sym">fixed 32°</td><td class="val">E = 862.0 W/m²</td><td>P_{ac} = 2936 W</td></tr><tr><td class="sym">1-axis</td><td class="val">E = 1043.7 W/m²</td><td>P_{ac} = 3506 W &nbsp;(+19% vs fixed)</td></tr><tr><td class="sym">2-axis</td><td class="val">E = 1049.9 W/m²</td><td>P_{ac} = 3525 W</td></tr></tbody></table></div><p class="eq note">same day, 24 h: &nbsp;fixed 25.8 kWh,&nbsp; 1-axis 42.5 kWh &nbsp;(+65%)</p></div></div>
+</section>
+<section class="part"><h2>The whole year</h2><div class="step"><h3><span class="n">10</span>Sum the hours</h3><div class="math"><p class="eq">E<sub>year</sub> = Σ<sub>h=1</sub><sup>8760</sup> P<sub>ac</sub>(h) × 1 h</p><div class="tablewrap"><table class="given"><tbody><tr><td class="sym">kWh per kW</td><td class="val">Phoenix</td><td>Des Moines</td></tr><tr><td class="sym">flat</td><td class="val">1545</td><td>1122</td></tr><tr><td class="sym">fixed</td><td class="val">1778</td><td>1353</td></tr><tr><td class="sym">1-axis</td><td class="val">2219 &nbsp;(+24.8%)</td><td>1590 &nbsp;(+17.5%)</td></tr><tr><td class="sym">2-axis</td><td class="val">2482 &nbsp;(+39.6%)</td><td>1820 &nbsp;(+34.5%)</td></tr></tbody></table></div><p class="eq note">diffuse share Σ DHI / Σ GHI: &nbsp;Phoenix 0.23,&nbsp; Des Moines 0.41 &nbsp;⇒&nbsp; less beam to chase</p></div></div>
+<div class="step"><h3><span class="n">11</span>Check</h3><div class="math"><p class="eq num">browser model vs pvlib, Phoenix:</p><p class="eq num">&nbsp;&nbsp;&nbsp;&nbsp;fixed 8543 vs 8567 kWh &nbsp;(−0.3%),&nbsp; 1-axis 10 662 vs 10 707 kWh &nbsp;(−0.4%)</p><p class="eq note">full model vs a real NREL array, 7 years: within 2% (case study)</p></div></div>
+</section>
+<section class="part"><h2>Trackers in rows</h2><div class="step"><h3><span class="n">12</span>Backtracking</h3><div class="math"><p class="eq">R<sub>b</sub> = R − sign(R) acos( <span class="fr"><span>|cos R|</span><span>GCR</span></span> ) &nbsp;&nbsp; if <span class="fr"><span>|cos R|</span><span>GCR</span></span> &lt; 1</p><p class="eq num">GCR = 0.35,&nbsp; R = 70°: &nbsp;<span class="fr"><span>0.342</span><span>0.35</span></span> = 0.977 &nbsp;⇒&nbsp; R<sub>b</sub> = 70° − 12.3° = 57.7°</p></div></div>
+<div class="step"><h3><span class="n">13</span>Shade</h3><div class="math"><p class="eq">f<sub>s</sub> = 1 − <span class="fr"><span>cos R</span><span>GCR cos(R<sub>b</sub> − R)</span></span></p><p class="eq num">Phoenix, rows that backtrack: &nbsp;2113 kWh/kW &nbsp;⇒&nbsp; gain = <span class="fr"><span>2113</span><span>1778</span></span> − 1 = +18.8%</p></div></div>
+</section>
+<section class="part"><h2>Is it worth the money?</h2><div class="step"><h3><span class="n">14</span>Break-even price</h3><div class="math"><p class="eq">c<sub>max</sub> = <span class="fr"><span>ΔE · p · Σ<sub>t=1</sub><sup>25</sup> (1 − d)<sup>t−1</sup>(1 + r)<sup>−t</sup> − m · Σ<sub>t=1</sub><sup>25</sup> (1 + r)<sup>−t</sup></span><span>1000</span></span></p><p class="eq num">r = 6%,&nbsp; d = 0.5%: &nbsp;Σ = 12.22 and 12.78</p></div></div>
+<div class="step"><h3><span class="n">15</span>Home</h3><div class="math"><p class="eq num">ΔE = 2219 − 1778 = 441 kWh/kW,&nbsp; p = $0.15,&nbsp; m = $20/kW</p><p class="eq num">c<sub>max</sub> = <span class="fr"><span>441 × 0.15 × 12.22 − 20 × 12.78</span><span>1000</span></span> = $0.55/W</p><p class="eq note">market adds $1.26 – 3.15/W &nbsp;⇒&nbsp; never pays back ✗</p><p class="eq note">(full model in the case study: $0.57/W)</p></div></div>
+<div class="step"><h3><span class="n">16</span>Solar farm</h3><div class="math"><p class="eq num">ΔE = 2113 − 1778 = 335 kWh/kW,&nbsp; p = $0.03,&nbsp; m = $2/kW</p><p class="eq num">c<sub>max</sub> = <span class="fr"><span>335 × 0.03 × 12.22 − 2 × 12.78</span><span>1000</span></span> = $0.10/W</p><p class="eq note">like-for-like 2026 price: $0.11/W &nbsp;⇒&nbsp; roughly even</p></div></div>
+<div class="step"><h3><span class="n">17</span>When the energy arrives</h3><div class="math"><p class="eq">V = Σ<sub>h</sub> P<sub>ac</sub>(h) · λ(h) &nbsp;&nbsp; λ = hourly market price</p><p class="eq num">CAISO 2025, farm rows vs fixed: &nbsp;ΔE = +19%,&nbsp; ΔV = +34%,&nbsp; V / E = +13%</p><p class="eq note">from the case study, which runs this with Daggett weather</p></div></div>
+</section>
+<section class="part"><h2>Back to the twitching controller</h2><div class="step"><h3><span class="n">18</span>Sensor</h3><div class="math"><p class="eq">R<sub>LDR</sub> = R<sub>10</sub> (<span class="fr"><span>lux</span><span>10</span></span>)<sup>−γ</sup>,&nbsp;&nbsp; V = V<sub>cc</sub> <span class="fr"><span>R<sub>LDR</sub></span><span>R<sub>LDR</sub> + R<sub>f</sub></span></span>,&nbsp;&nbsp; ADC = 1023 − ⌊1023 V/5⌋</p></div></div>
+<div class="step"><h3><span class="n">19</span>Decision, every 30 ms</h3><div class="math"><p class="eq">e = ADC<sub>E</sub> − ADC<sub>W</sub></p><p class="eq">raw: &nbsp;|e| &gt; 10 &nbsp;⇒&nbsp; step 1°</p><p class="eq">filtered: &nbsp;| <span class="fr"><span>1</span><span>20</span></span> Σ<sub>k=0</sub><sup>19</sup> e<sub>n−k</sub> | &gt; 40 &nbsp;⇒&nbsp; step 1°</p><p class="eq num">direction reversals in one cloudy day: &nbsp;749 → 7</p></div></div>
+<div class="step"><h3><span class="n">20</span>Cost of pointing error</h3><div class="math"><p class="eq">loss ≈ 1 − cos ε</p><p class="eq num">ε = 2°: &nbsp;1 − cos 2° = 0.06%</p><p class="eq num">worst controller, full Phoenix year: &nbsp;0.17%</p><p class="eq note">twitching costs motor wear, not energy</p></div></div>
+</section>
+<section class="part"><h2>Result</h2><div class="step"><h3><span class="n">✓</span></h3><div class="math"><div class="boxed"><p class="eq">Phoenix: &nbsp;1-axis +24.8%,&nbsp; in rows +18.8%,&nbsp; 2-axis +39.6% energy</p><p class="eq">home: c<sub>max</sub> = $0.55/W ≪ $1.26/W &nbsp;⇒&nbsp; no</p><p class="eq">farm rows: c<sub>max</sub> = $0.10/W ≈ $0.11/W, &nbsp;and V/E = +13% &nbsp;⇒&nbsp; close, timing tips it</p></div></div></div>
+</section>
+
+  </div>
+  <div class="inner endlinks">
+    <a class="text-link" href="solar-sim.html"><span aria-hidden="true">←</span> Back to the simulation</a>
+  </div>
+</main>
+<footer class="footer">
+  <div class="inner">© 2026 John Kaluiji</div>
+</footer>
+</body>
+</html>
